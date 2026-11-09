@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>PDF ke template kode · DocForge</title>
+    <link rel="stylesheet" href="/ui.css" />
+    <link rel="stylesheet" href="/converter.css" />
+    <script type="module" src="/converter.js"></script>
+  </head>
+  <body class="converter-body">
+    <header class="converter-header">
+      <a class="brand" href="/"
+        ><span class="brand-icon">d<span>f</span><i></i></span
+        ><span>docforge.</span></a
+      ><a class="text-link" href="/">← Kembali ke workspace</a>
+    </header>
+    <main class="converter-main">
+      <p class="eyebrow">DARI PDF KE KODE APLIKASI</p>
+      <div class="converter-intro">
+        <div>
+          <h1>Desain sudah ada.<br /><span>Tinggal jadikan template.</span></h1>
+          <p>
+            Unggah PDF, pilih teks yang ingin diganti data, lalu ekspor fungsi
+            TypeScript.<br />File diproses di browser dan tidak diunggah ke
+            server.
+          </p>
+        </div>
+        <span class="intro-symbol" aria-hidden="true">{ }</span>
+      </div>
+      <div class="notice" id="converter-status" role="status">
+        Teks PDF akan diekstrak berdasarkan posisi. Tabel berulang dan logika
+        aplikasi perlu ditambahkan di kode hasil ekspor. PDF scan belum
+        mendukung pengenalan teks (OCR).
+      </div>
+      <section class="panel upload-panel">
+        <label class="upload-label" for="pdf-file"
+          ><span>↥</span>
+          <div>
+            <strong>Pilih atau letakkan PDF di sini</strong
+            ><small>PDF maksimal 15 MB · hingga 20 halaman</small>
+          </div>
+          <input type="file" id="pdf-file" accept="application/pdf,.pdf"
+        /></label>
+        <div class="function-name">
+          <label for="function-name">Nama fungsi TypeScript</label
+          ><input
+            id="function-name"
+            value="TemplateDokumen"
+            spellcheck="false"
+          />
+        </div>
+      </section>
+      <div class="converter-grid">
+        <section class="panel source-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="step-number">01</span>
+              <h2>Pilih teks pada PDF</h2>
+            </div>
+            <div class="page-switch">
+              <button
+                id="previous-page"
+                aria-label="Halaman sebelumnya"
+                disabled
+              >
+                ←</button
+              ><span id="page-label">0 / 0</span
+              ><button id="next-page" aria-label="Halaman berikutnya" disabled>
+                →
+              </button>
+            </div>
+          </div>
+          <div class="source-scroll">
+            <div id="pdf-stage">
+              <div class="source-empty">
+                <span>▤</span>
+                <h3>Mulai dari PDF milikmu</h3>
+                <p>
+                  Setelah file dibaca, klik teks untuk<br />menghubungkannya
+                  dengan variabel.
+                </p>
+              </div>
+            </div>
+          </div>
+          <p class="source-footer" id="source-details">
+            Teks yang dipilih akan ditandai hijau.
+          </p>
+        </section>
+        <section class="panel mapping-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="step-number">02</span>
+              <h2>Hubungkan ke data</h2>
+            </div>
+            <span id="binding-count" class="preview-tag">0 VARIABEL</span>
+          </div>
+          <div id="mapping-empty" class="mapping-empty">
+            Klik teks di PDF untuk membuat variabel.<br />Contoh: pilih nomor
+            surat → beri nama <code>nomorSurat</code>.
+          </div>
+          <div id="binding-list"></div>
+          <div class="mapping-actions">
+            <button id="clear-bindings" class="subtle-button" disabled>
+              Hapus semua pemetaan</button
+            ><a class="subtle-button" href="/editor"
+              >PDF scan? Gunakan overlay ↗</a
+            >
+          </div>
+        </section>
+      </div>
+      <section class="panel export-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="step-number">03</span>
+            <h2>Pratinjau & ekspor</h2>
+          </div>
+          <div class="export-actions">
+            <button id="download-ts" class="subtle-button" disabled>
+              ↓ TypeScript</button
+            ><button id="download-package" class="primary-button" disabled>
+              ↓ Unduh paket template
+            </button>
+          </div>
+        </div>
+        <div class="export-tabs" role="tablist" aria-label="Hasil konversi">
+          <button role="tab" data-tab="preview" aria-selected="true">
+            Pratinjau HTML</button
+          ><button role="tab" data-tab="typescript" aria-selected="false">
+            TypeScript</button
+          ><button role="tab" data-tab="html" aria-selected="false">HTML</button
+          ><button role="tab" data-tab="schema" aria-selected="false">
+            Schema & data</button
+          ><button role="tab" data-tab="usage" aria-selected="false">
+            Cara pakai
+          </button>
+        </div>
+        <div class="export-content">
+          <div id="export-empty">Unggah PDF untuk melihat hasil konversi.</div>
+          <iframe
+            id="html-preview"
+            title="Pratinjau template hasil konversi"
+            sandbox=""
+            hidden
+          ></iframe
+          ><textarea
+            id="code-output"
+            aria-label="Kode hasil konversi"
+            spellcheck="false"
+            readonly
+            hidden
+          ></textarea
+          ><button id="copy-code" class="copy-code subtle-button" hidden>
+            Salin kode
+          </button>
+        </div>
+        <p class="export-footer">
+          Paket ZIP berisi fungsi .ts, template.html, schema.json,
+          sample-data.json, config.json, dan contoh penggunaan. Layout hasil
+          konversi mengikuti halaman PDF; ukuran teks dan font mungkin perlu
+          penyesuaian.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

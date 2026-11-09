@@ -2,6 +2,20 @@
 
 Dokumen baru cukup menambah folder template, tanpa menulis ulang kode layout aplikasi. Service menerima JSON, memvalidasi schema template, lalu mengirim PDF/PNG yang siap diunduh.
 
+## Gunakan lewat browser
+
+Jalankan `npm run dev`, lalu buka **http://localhost:3000**. Masukkan nilai `API_KEY` dari file `.env` (bukan `.env.example`) pada dialog koneksi. Setelah terhubung, semua pembuatan dokumen dapat dilakukan di UI tanpa Postman atau curl:
+
+1. Pilih template sertifikat, surat resmi, atau laporan.
+2. Isi form; tabel laporan mendukung tambah/hapus baris. Tombol **Data contoh** mengembalikan contoh bawaan.
+3. Pilih PDF/PNG, klik **Buat dokumen**, lalu periksa pratinjau dan unduh hasilnya.
+
+**Impor JSON** menerima objek data untuk satu dokumen atau array objek untuk berpindah ke mode **Sekaligus**. Mode ini menampilkan progres dan menyediakan ZIP beserta laporan kegagalan; layanan batch/Redis harus aktif. Editor overlay dapat dibuka dari navigasi **Editor template**.
+
+API key dikirim melalui header oleh UI. Jika opsi ingat diaktifkan, key disimpan di sessionStorage selama tab terbuka; tombol koneksi menyediakan opsi putuskan koneksi. Key tidak ditanam dalam HTML atau JavaScript. File UI dilayani langsung oleh Fastify, memakai aset/font lokal, dan ikut tersedia di image Docker tanpa build frontend tambahan.
+
+Jalankan `npm run test:ui` untuk tes browser: login benar/salah, form otomatis, PDF/PNG dan unduhan, impor data, edit tabel, tampilan ponsel, serta alur batch (respons batch dimock dalam tes UI; integrasi Redis diuji terpisah dengan `test:stage3`).
+
 ## Tahap 1 — HTML
 
 Node.js 22.13+, npm, dan Chromium dibutuhkan. Jalankan:
@@ -106,3 +120,26 @@ Playwright memakai mesin layout browser untuk CSS, font, tabel dan pagination, s
 Di Docker Chromium berjalan sebagai user node dengan sandbox browser dinonaktifkan untuk kompatibilitas container; isolasi render tetap menerapkan JavaScript off, pemblokiran jaringan, dan pemeriksaan file lokal. Jalankan layanan di container tersendiri dan letakkan TLS/reverse proxy di depan untuk penggunaan di jaringan publik.
 
 Data contoh `laporan/sample-data.json` berisi 80 baris untuk menunjukkan pagination. Chromium diberi batas waktu render 30 detik per dokumen; PNG HTML dibatasi 60 juta piksel. Arsip di OUTPUT_DIR disimpan sampai dihapus operator; jadwalkan pembersihan sesuai kebijakan retensi aplikasi.
+
+## PDF ke template TypeScript
+
+Buka **http://localhost:3000/converter** atau menu **PDF ke kode**. Pilih/seret PDF (maksimal 15 MB, 20 halaman). File diproses lokal di browser tanpa dikirim ke server. Pilih teks pada PDF, beri nama variabel seperti `nomorSurat`, pilih tipe dan contoh nilai. Kolom **Bagian teks yang diganti** memungkinkan penggantian sebagian teks: `Nomor: 001/2026` dapat menjadi `Nomor: {{nomorSurat}}`. Pemetaan dilakukan per potongan teks yang terdeteksi; satu potongan mendukung satu penggantian, pada kemunculan pertama substring yang dipilih. Variabel yang sama dapat dipakai pada beberapa potongan jika tipe, kewajiban, dan contohnya sama.
+
+Isi nama fungsi, misalnya `TemplateSuratPemanggilan`. Panel hasil menyediakan pratinjau HTML, kode TypeScript/HTML, schema/data dan contoh pemakaian. Unduh `.ts` langsung atau paket ZIP yang berisi:
+
+- `<NamaFungsi>.ts`: fungsi mandiri bertipe yang mengembalikan string HTML; data dinamis di-escape.
+- `template.html`, `schema.json`, `sample-data.json`, `config.json`: siap disalin ke `templates/<id>/` dan digunakan oleh `/generate` atau UI setelah memuat ulang daftar template.
+- `example.ts` dan `README.md`: contoh integrasi ke aplikasi.
+
+Contoh setelah memetakan field `nomorSurat`:
+
+```ts
+import { TemplateSuratPemanggilan } from './TemplateSuratPemanggilan';
+
+const html = TemplateSuratPemanggilan({ nomorSurat: '002/BPSDM/2026' });
+// Gunakan string html dengan renderer PDF aplikasi Anda.
+```
+
+Konverter mempertahankan koordinat halaman PDF. Grafik/gambar menjadi PNG tertanam; teks yang terbaca menjadi elemen HTML. Font, warna teks, dan posisi hasilnya perlu diperiksa. Font sumber dapat diganti ke font aplikasi pada kode hasil ekspor. PDF scan tidak menjalankan OCR: gunakan editor overlay untuk menambah teks pada latar scan. Struktur semantik tabel, loop `peserta.map(...)`, import entity, pemformatan tanggal, dan relasi data aplikasi seperti contoh surat pemanggilan tidak dapat disimpulkan dari PDF; tambahkan logika tersebut pada kode hasil ekspor. Untuk tabel panjang yang perlu mengalir ke halaman baru, gunakan template HTML dengan loop. Pada PDF dengan ukuran halaman berbeda, CSS menyimpan ukuran masing-masing, sementara config renderer DocForge mengikuti halaman pertama.
+
+Tes `npm run test:converter` memeriksa pemetaan substring, escape HTML/kode, TypeScript strict, PDF beberapa halaman, pemisahan grafik dari teks, ZIP yang dapat dipasang sebagai template, serta tampilan desktop/ponsel.

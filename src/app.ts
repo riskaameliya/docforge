@@ -43,6 +43,15 @@ export async function createApp(
     if (
       req.url === "/health" ||
       [
+        "/",
+        "/ui.css",
+        "/ui.js",
+        "/ui-font.ttf",
+        "/converter",
+        "/converter.css",
+        "/converter.js",
+        "/template-export.js",
+        "/converter-vendor/fflate.js",
         "/editor",
         "/editor.js",
         "/editor-vendor/pdf.mjs",
@@ -133,6 +142,25 @@ export async function createApp(
           )
           .send(stream);
       },
+    );
+  }
+  for (const [url, file, type] of [
+    ["/", "public/index.html", "text/html; charset=utf-8"],
+    ["/ui.css", "public/ui.css", "text/css"],
+    ["/ui.js", "public/ui.js", "text/javascript"],
+    ["/ui-font.ttf", "fonts/NotoSans-Regular.ttf", "font/ttf"],
+    ["/converter", "public/converter.html", "text/html; charset=utf-8"],
+    ["/converter.css", "public/converter.css", "text/css"],
+    ["/converter.js", "public/converter.js", "text/javascript"],
+    ["/template-export.js", "public/template-export.js", "text/javascript"],
+    [
+      "/converter-vendor/fflate.js",
+      "node_modules/fflate/esm/browser.js",
+      "text/javascript",
+    ],
+  ]) {
+    app.get(url, async (_req, reply) =>
+      reply.type(type).send(await readFile(file)),
     );
   }
   app.get("/editor", async (_req, reply) =>

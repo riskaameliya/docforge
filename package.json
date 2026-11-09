@@ -11,7 +11,9 @@
     "test:stage1": "vitest run test/validation.test.ts test/html.test.ts",
     "test:stage2": "vitest run test/overlay.test.ts",
     "test:stage3": "vitest run test/batch.test.ts",
-    "setup": "playwright install chromium && tsx scripts/create-certificate.ts"
+    "setup": "playwright install chromium && tsx scripts/create-certificate.ts",
+    "test:ui": "vitest run test/ui.test.ts",
+    "test:converter": "vitest run test/converter.test.ts"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.1.0",

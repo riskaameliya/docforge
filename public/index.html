@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#193f32" />
+    <title>DocForge — Buat dokumen dengan mudah</title>
+    <link rel="stylesheet" href="/ui.css" />
+    <script type="module" src="/ui.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="DocForge beranda"
+          ><span class="brand-icon">d<span>f</span><i></i></span
+          ><span>docforge<span class="brand-dot">.</span></span></a
+        >
+        <div class="workspace-label">WORKSPACE</div>
+        <nav aria-label="Navigasi utama">
+          <button class="nav-item active" id="nav-single">
+            <span aria-hidden="true">▤</span> Buat dokumen
+            <span class="nav-arrow">↗</span></button
+          ><button class="nav-item" id="nav-batch">
+            <span aria-hidden="true">▥</span> Buat sekaligus</button
+          ><a class="nav-item" href="/converter"
+            ><span aria-hidden="true">⌘</span> PDF ke kode
+            <span class="nav-arrow">↗</span></a
+          ><a class="nav-item" href="/editor"
+            ><span aria-hidden="true">⊞</span> Editor template
+            <span class="nav-arrow">↗</span></a
+          >
+        </nav>
+        <div class="sidebar-note">
+          <span class="note-icon">✦</span
+          ><strong>Satu template.<br />Banyak kemungkinan.</strong>
+          <p>
+            Dari sertifikat hingga laporan, biarkan DocForge mengurus
+            tampilannya.
+          </p>
+          <span class="note-line"></span>
+        </div>
+        <div class="sidebar-bottom">
+          <span class="avatar">DF</span>
+          <div>
+            <strong>Workspace lokal</strong
+            ><small id="connection-label">Belum terhubung</small>
+          </div>
+          <button
+            class="icon-button"
+            id="connection-button"
+            aria-label="Atur koneksi"
+            title="Atur koneksi"
+          >
+            ⚙
+          </button>
+        </div>
+      </aside>
+      <div class="main-shell">
+        <header class="topbar">
+          <div class="breadcrumb">
+            Workspace <span>/</span>
+            <strong id="breadcrumb-page">Buat dokumen</strong>
+          </div>
+          <div class="topbar-right">
+            <button
+              class="connection-pill"
+              id="connection-pill"
+              type="button"
+              aria-label="Atur koneksi workspace"
+            >
+              <i></i> Belum terhubung</button
+            ><a href="/editor" class="text-link">Editor template ↗</a>
+          </div>
+        </header>
+        <main>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow"><span></span> DARI DATA JADI DOKUMEN</p>
+              <h1>Dokumen siap.<br /><span>Urusan jadi mudah.</span></h1>
+              <p class="heading-description">
+                Pilih template, isi datanya, dan unduh hasilnya.<br />Dokumen
+                profesional, tanpa repot mengatur layout.
+              </p>
+            </div>
+            <div class="heading-art" aria-hidden="true">
+              <div class="art-sheet back"></div>
+              <div class="art-sheet front">
+                <span class="art-seal">✧</span><i></i><i></i><b></b
+                ><em>docforge</em>
+              </div>
+              <span class="art-star">✳</span
+              ><span class="art-badge">Siap diunduh <span>✓</span></span>
+            </div>
+          </div>
+          <div class="notice" id="notice" role="status" hidden></div>
+          <section class="template-section" aria-labelledby="templates-heading">
+            <div class="section-heading">
+              <div>
+                <span class="step-number">01</span>
+                <h2 id="templates-heading">Pilih template</h2>
+              </div>
+              <span class="section-hint" id="template-count"
+                >Hubungkan workspace untuk memulai</span
+              >
+            </div>
+            <div class="template-grid" id="template-grid">
+              <div class="template-placeholder">
+                Template akan muncul setelah workspace terhubung.
+              </div>
+            </div>
+          </section>
+          <div class="work-grid">
+            <section class="panel data-panel" aria-labelledby="data-heading">
+              <div class="panel-heading">
+                <div>
+                  <span class="step-number">02</span>
+                  <h2 id="data-heading">Lengkapi data</h2>
+                </div>
+                <div class="segmented" aria-label="Mode pembuatan">
+                  <button id="mode-single" class="selected" type="button">
+                    Satu dokumen</button
+                  ><button id="mode-batch" type="button">Sekaligus</button>
+                </div>
+              </div>
+              <div class="data-toolbar">
+                <p id="data-description">
+                  Pilih template untuk melihat kolom yang perlu diisi.
+                </p>
+                <div>
+                  <button class="subtle-button" id="sample-button" disabled>
+                    ↺ Data contoh</button
+                  ><button class="subtle-button" id="upload-button" disabled>
+                    ↥ Impor JSON</button
+                  ><input
+                    type="file"
+                    id="json-file"
+                    accept="application/json,.json"
+                    hidden
+                  />
+                </div>
+              </div>
+              <form id="document-form">
+                <div id="dynamic-fields" class="form-fields">
+                  <div class="empty-form">
+                    <span>↖</span> Mulai dengan memilih template di atas.
+                  </div>
+                </div>
+                <div id="batch-fields" class="batch-fields" hidden>
+                  <label for="batch-data"
+                    >Data dokumen
+                    <span class="optional">Array JSON</span></label
+                  ><textarea
+                    id="batch-data"
+                    spellcheck="false"
+                    placeholder='[{"nama":"Siti"}, {"nama":"Budi"}]'
+                  ></textarea>
+                  <div class="batch-options">
+                    <span id="batch-count">0 dokumen</span
+                    ><label for="filename-field"
+                      >Nama file dari kolom
+                      <select id="filename-field">
+                        <option value="">Nomor urut</option>
+                      </select></label
+                    >
+                  </div>
+                  <p class="helper">
+                    Impor file JSON untuk membuat banyak dokumen dari satu
+                    template. Item yang gagal akan dicatat dalam laporan ZIP.
+                  </p>
+                </div>
+                <div class="generate-footer">
+                  <fieldset class="format-options">
+                    <legend>Format unduhan</legend>
+                    <label
+                      ><input
+                        type="radio"
+                        name="format"
+                        value="pdf"
+                        checked
+                      /><span
+                        ><strong>PDF</strong
+                        ><small>Dokumen siap cetak</small></span
+                      ></label
+                    ><label
+                      ><input type="radio" name="format" value="png" /><span
+                        ><strong>PNG</strong
+                        ><small>Gambar berkualitas</small></span
+                      ></label
+                    >
+                  </fieldset>
+                  <button
+                    type="submit"
+                    id="generate-button"
+                    class="primary-button"
+                    disabled
+                  >
+                    <span>✦</span> Buat dokumen <span>→</span>
+                  </button>
+                </div>
+              </form>
+            </section>
+            <section
+              class="panel preview-panel"
+              aria-labelledby="preview-heading"
+            >
+              <div class="panel-heading">
+                <div>
+                  <span class="step-number">03</span>
+                  <h2 id="preview-heading">Pratinjau</h2>
+                </div>
+                <span class="preview-tag" id="preview-tag"
+                  >BELUM ADA HASIL</span
+                >
+              </div>
+              <div class="preview-body" id="preview-body">
+                <div class="preview-empty">
+                  <div class="empty-document" aria-hidden="true">
+                    <span>✧</span><i></i><i></i><i></i><b></b>
+                  </div>
+                  <h3>Sebentar lagi, jadi dokumen.</h3>
+                  <p>
+                    Hasil dokumenmu akan muncul di sini.<br />Periksa sebelum
+                    kamu mengunduhnya.
+                  </p>
+                  <span class="preview-footnote"
+                    >PDF atau PNG · Langsung dari browser</span
+                  >
+                </div>
+              </div>
+              <div class="preview-download" id="preview-download" hidden>
+                <div>
+                  <strong id="output-filename"></strong
+                  ><small id="output-size"></small>
+                </div>
+                <a id="download-link" class="primary-button" download
+                  >↓ Unduh</a
+                >
+              </div>
+              <div class="job-progress" id="job-progress" hidden>
+                <div>
+                  <strong id="job-label">Memproses dokumen…</strong
+                  ><span id="job-percent">0%</span>
+                </div>
+                <progress id="job-bar" max="100" value="0"></progress>
+                <p id="job-details"></p>
+              </div>
+            </section>
+          </div>
+          <footer class="page-footer">
+            <span
+              ><span class="footer-mark">✧</span> Lebih sedikit pekerjaan
+              berulang. Lebih banyak hal yang selesai.</span
+            ><span>Made simple by <strong>docforge.</strong></span>
+          </footer>
+        </main>
+      </div>
+    </div>
+    <dialog id="connection-dialog" aria-labelledby="connection-title">
+      <form id="connection-form">
+        <div class="dialog-icon">↗</div>
+        <p class="eyebrow">SELAMAT DATANG DI DOCFORGE</p>
+        <h2 id="connection-title">Hubungkan workspace</h2>
+        <p>Masukkan kunci akses dari pengelola untuk mulai membuat dokumen.</p>
+        <label for="api-key">Kunci akses</label
+        ><input
+          id="api-key"
+          type="password"
+          placeholder="Masukkan kunci akses"
+          autocomplete="off"
+          required
+        /><label class="remember-label"
+          ><input id="remember-key" type="checkbox" checked /> Ingat selama tab
+          ini terbuka</label
+        >
+        <p class="dialog-error" id="connection-error" role="alert" hidden></p>
+        <button class="primary-button" id="connect-button" type="submit">
+          Hubungkan workspace <span>→</span></button
+        ><button
+          class="subtle-button disconnect-button"
+          id="disconnect-button"
+          type="button"
+          hidden
+        >
+          Putuskan koneksi</button
+        ><button
+          class="dialog-close icon-button"
+          id="close-dialog"
+          type="button"
+          aria-label="Tutup"
+        >
+          ×
+        </button>
+      </form>
+    </dialog>
+  </body>
+</html>
