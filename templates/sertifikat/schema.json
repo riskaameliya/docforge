@@ -1,0 +1,8 @@
+{
+  "fields": {
+    "nama": { "type": "string", "required": true },
+    "kegiatan": { "type": "string", "required": true },
+    "tanggal": { "type": "date", "required": true },
+    "nomor": { "type": "string", "required": true }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "type": "overlay",
+  "background": "background.pdf",
+  "size": "A4",
+  "orientation": "landscape",
+  "margin": 0
+}

@@ -1,0 +1,17 @@
+{
+  "fields": {
+    "judul": { "type": "string", "required": true },
+    "tanggal": { "type": "date", "required": true },
+    "items": {
+      "type": "array",
+      "required": true,
+      "items": {
+        "fields": {
+          "nama": { "type": "string", "required": true },
+          "jumlah": { "type": "number", "required": true },
+          "keterangan": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="id">
+  <meta charset="UTF-8" /><style>
+    @font-face {
+      font-family: NotoSans;
+      src: url('/fonts/NotoSans-Regular.ttf');
+    }
+    body {
+      font-family: NotoSans, Arial, sans-serif;
+      color: #172b4d;
+      font-size: 12pt;
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+    }
+    header {
+      border-bottom: 3px solid #183e61;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    header img {
+      width: 50px;
+    }
+    h1 {
+      font-size: 23pt;
+    }
+    article {
+      white-space: pre-wrap;
+    }
+    footer {
+      margin-top: 65px;
+      margin-left: 50%;
+    }
+  </style>
+  <header>
+    <img src="/assets/logo.svg" />
+    <h1>DOCFORGE INDONESIA</h1>
+  </header>
+  <p>
+    Nomor: {{nomor}}<br />Tanggal: {{tanggal}}{{#if lampiran}}<br />Lampiran:
+    {{lampiran}}{{/if}}
+  </p>
+  <p>Kepada Yth.<br />{{penerima}}</p>
+  <article>{{isi}}</article>
+  <footer>Hormat kami,<br /><br /><br />{{penandatangan}}</footer>
+</html>

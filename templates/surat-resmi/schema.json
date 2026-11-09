@@ -1,0 +1,10 @@
+{
+  "fields": {
+    "nomor": { "type": "string", "required": true },
+    "tanggal": { "type": "date", "required": true },
+    "penerima": { "type": "string", "required": true },
+    "isi": { "type": "string", "required": true },
+    "penandatangan": { "type": "string", "required": true },
+    "lampiran": { "type": "string" }
+  }
+}

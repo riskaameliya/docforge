@@ -1,0 +1,406 @@
+{
+  "judul": "Laporan Persediaan",
+  "tanggal": "2026-11-09",
+  "items": [
+    {
+      "nama": "Barang inventaris 001",
+      "jumlah": 3,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 002",
+      "jumlah": 6,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 003",
+      "jumlah": 9,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 004",
+      "jumlah": 12,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 005",
+      "jumlah": 15,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 006",
+      "jumlah": 18,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 007",
+      "jumlah": 21,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 008",
+      "jumlah": 24,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 009",
+      "jumlah": 27,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 010",
+      "jumlah": 30,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 011",
+      "jumlah": 33,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 012",
+      "jumlah": 36,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 013",
+      "jumlah": 39,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 014",
+      "jumlah": 42,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 015",
+      "jumlah": 45,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 016",
+      "jumlah": 48,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 017",
+      "jumlah": 51,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 018",
+      "jumlah": 54,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 019",
+      "jumlah": 57,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 020",
+      "jumlah": 60,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 021",
+      "jumlah": 63,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 022",
+      "jumlah": 66,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 023",
+      "jumlah": 69,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 024",
+      "jumlah": 72,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 025",
+      "jumlah": 75,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 026",
+      "jumlah": 78,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 027",
+      "jumlah": 81,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 028",
+      "jumlah": 84,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 029",
+      "jumlah": 87,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 030",
+      "jumlah": 90,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 031",
+      "jumlah": 93,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 032",
+      "jumlah": 96,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 033",
+      "jumlah": 99,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 034",
+      "jumlah": 102,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 035",
+      "jumlah": 105,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 036",
+      "jumlah": 108,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 037",
+      "jumlah": 111,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 038",
+      "jumlah": 114,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 039",
+      "jumlah": 117,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 040",
+      "jumlah": 120,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 041",
+      "jumlah": 123,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 042",
+      "jumlah": 126,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 043",
+      "jumlah": 129,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 044",
+      "jumlah": 132,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 045",
+      "jumlah": 135,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 046",
+      "jumlah": 138,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 047",
+      "jumlah": 141,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 048",
+      "jumlah": 144,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 049",
+      "jumlah": 147,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 050",
+      "jumlah": 150,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 051",
+      "jumlah": 153,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 052",
+      "jumlah": 156,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 053",
+      "jumlah": 159,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 054",
+      "jumlah": 162,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 055",
+      "jumlah": 165,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 056",
+      "jumlah": 168,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 057",
+      "jumlah": 171,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 058",
+      "jumlah": 174,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 059",
+      "jumlah": 177,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 060",
+      "jumlah": 180,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 061",
+      "jumlah": 183,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 062",
+      "jumlah": 186,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 063",
+      "jumlah": 189,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 064",
+      "jumlah": 192,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 065",
+      "jumlah": 195,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 066",
+      "jumlah": 198,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 067",
+      "jumlah": 201,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 068",
+      "jumlah": 204,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 069",
+      "jumlah": 207,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 070",
+      "jumlah": 210,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 071",
+      "jumlah": 213,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 072",
+      "jumlah": 216,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 073",
+      "jumlah": 219,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 074",
+      "jumlah": 222,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 075",
+      "jumlah": 225,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 076",
+      "jumlah": 228,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 077",
+      "jumlah": 231,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 078",
+      "jumlah": 234,
+      "keterangan": "Perlu pemeriksaan lanjutan"
+    },
+    {
+      "nama": "Barang inventaris 079",
+      "jumlah": 237,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    },
+    {
+      "nama": "Barang inventaris 080",
+      "jumlah": 240,
+      "keterangan": "Kondisi baik — pemeriksaan rutin"
+    }
+  ]
+}

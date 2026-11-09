@@ -1,0 +1,50 @@
+[
+  {
+    "key": "nama",
+    "unit": "percent",
+    "x": 12,
+    "y": 43,
+    "width": 76,
+    "height": 12,
+    "fontSize": 32,
+    "align": "center",
+    "autoShrink": true,
+    "wrap": true,
+    "color": "#264d66",
+    "font": "NotoSans-Regular.ttf"
+  },
+  {
+    "key": "kegiatan",
+    "unit": "percent",
+    "x": 15,
+    "y": 63,
+    "width": 70,
+    "height": 10,
+    "fontSize": 20,
+    "align": "center",
+    "autoShrink": true,
+    "wrap": true,
+    "font": "NotoSans-Regular.ttf"
+  },
+  {
+    "key": "tanggal",
+    "unit": "percent",
+    "x": 30,
+    "y": 75,
+    "width": 40,
+    "height": 6,
+    "fontSize": 14,
+    "align": "center",
+    "font": "NotoSans-Regular.ttf"
+  },
+  {
+    "key": "nomor",
+    "unit": "pt",
+    "x": 45,
+    "y": 535,
+    "width": 300,
+    "height": 25,
+    "fontSize": 11,
+    "font": "NotoSans-Regular.ttf"
+  }
+]
