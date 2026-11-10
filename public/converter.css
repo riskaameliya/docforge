@@ -1,44 +1,27 @@
-.converter-header {
-  height: 78px;
-  border-bottom: 1px solid #e1e7da;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 max(24px, calc((100vw - 1260px) / 2));
-}
+/* The workspace shell, heading and panel styles follow ui.css. */
 .converter-main {
-  max-width: 1260px;
-  padding: 36px 24px 40px;
-}
-.converter-intro {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 26px;
-}
-.converter-intro h1 {
-  font-size: 39px;
-}
-.converter-intro p {
-  color: #87947c;
-  line-height: 1.9;
-  font-size: 12px;
+  padding-bottom: 0;
 }
 .intro-symbol {
   font:
     100px Georgia,
     serif;
   color: #cad6b8;
-  margin-right: 55px;
+  margin-right: 40px;
+  flex-shrink: 0;
 }
 .upload-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 25px;
-  padding: 22px;
   margin-bottom: 24px;
+}
+.upload-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(220px, 1fr);
+  gap: 24px;
+  padding: 24px 20px;
+  align-items: center;
+}
+.upload-controls > * {
+  min-width: 0;
 }
 .upload-label {
   display: flex;
@@ -92,7 +75,7 @@
   border: 1px solid #dfe7d6;
   border-radius: 5px;
   background: #fcfdf9;
-  width: 260px;
+  width: 100%;
   font:
     12px ui-monospace,
     monospace;
@@ -100,13 +83,14 @@
 }
 .converter-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(310px, 1fr);
-  gap: 22px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
 }
 .source-panel .panel-heading,
 .mapping-panel .panel-heading {
-  padding: 17px 20px;
+  padding: 19px 20px;
+  flex-wrap: wrap;
 }
 .page-switch {
   display: flex;
@@ -124,9 +108,9 @@
 .source-scroll {
   background: #e8ecdf;
   padding: 20px;
-  max-height: 760px;
   overflow: auto;
-  min-height: 400px;
+  min-height: 0;
+  flex: 1;
 }
 .source-empty {
   text-align: center;
@@ -286,8 +270,9 @@
   flex-wrap: wrap;
 }
 #binding-list {
-  max-height: 690px;
+  min-height: 0;
   overflow: auto;
+  flex: 1;
 }
 .export-panel {
   margin-top: 24px;
@@ -381,93 +366,85 @@
 .converter-body .notice.success {
   color: #587345;
 }
-.converter-body .panel-heading h2 {
-  font-size: 13px;
+@media (min-width: 1101px) {
+  .source-panel,
+  .mapping-panel {
+    display: flex;
+    flex-direction: column;
+    height: clamp(480px, 65dvh, 760px);
+  }
+  .source-panel > .panel-heading,
+  .mapping-panel > .panel-heading,
+  .source-footer,
+  .mapping-actions {
+    flex-shrink: 0;
+  }
+  .mapping-empty {
+    margin: auto 0;
+  }
 }
-@media (max-width: 850px) {
+@media (max-width: 1100px) {
   .converter-grid {
-    grid-template-columns: 1fr;
-  }
-  .converter-intro h1 {
-    font-size: 34px;
-  }
-  .intro-symbol {
-    font-size: 70px;
-    margin-right: 5px;
-  }
-  .upload-panel {
-    align-items: flex-start;
-  }
-  .upload-label {
-    gap: 10px;
-  }
-  .function-name input {
-    width: 210px;
+    grid-template-columns: minmax(0, 1fr);
   }
   .source-scroll {
-    max-height: 650px;
+    min-height: 320px;
+    max-height: 600px;
   }
-  .converter-main {
-    padding-top: 25px;
+  #binding-list {
+    max-height: 600px;
   }
-  .export-tabs {
-    gap: 18px;
+  .intro-symbol {
+    font-size: 75px;
+    margin-right: 0;
+  }
+  .export-actions {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .export-panel > .panel-heading {
+    flex-wrap: wrap;
   }
 }
-@media (max-width: 600px) {
-  .converter-header {
-    padding: 0 20px;
-    height: 65px;
-  }
-  .converter-main {
-    padding: 23px 15px;
-  }
-  .converter-intro h1 {
-    font-size: 29px;
-  }
-  .converter-intro p {
-    font-size: 11px;
-  }
+@media (max-width: 700px) {
   .intro-symbol {
     display: none;
   }
-  .upload-panel {
-    flex-direction: column;
+  .upload-controls {
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
-    padding: 17px;
-  }
-  .function-name {
-    width: 100%;
-  }
-  .function-name input {
-    width: 100%;
-    font-size: 16px;
+    padding: 18px;
   }
   .upload-label input {
     max-width: 100%;
   }
-  .panel-heading {
-    flex-wrap: wrap;
-  }
-  .export-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-  .export-tabs {
-    padding: 0 15px;
-    gap: 16px;
-  }
-  .source-scroll {
-    padding: 10px;
-  }
+  .function-name input,
   .binding-card input:not([type="checkbox"]),
   .binding-card select {
     font-size: 16px;
   }
-  .binding-inputs {
-    grid-template-columns: 1fr 105px;
+  .converter-body .panel-heading {
+    flex-wrap: wrap;
   }
-  .converter-body .panel-heading h2 {
-    font-size: 12px;
+  .upload-panel .section-hint {
+    display: none;
+  }
+  .export-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .export-tabs {
+    padding: 0 18px;
+    gap: 18px;
+  }
+  .source-scroll {
+    padding: 14px;
+  }
+  .binding-inputs {
+    grid-template-columns: minmax(0, 1fr) 105px;
+  }
+  .export-content {
+    padding: 14px;
   }
 }

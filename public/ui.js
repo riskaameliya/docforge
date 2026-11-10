@@ -101,7 +101,7 @@ function setBusy(value) {
   $("upload-button").disabled = value || !selected;
   document
     .querySelectorAll(
-      ".template-card, #mode-single, #mode-batch, #nav-single, #nav-batch, #connection-button, #connection-pill",
+      ".template-card, #mode-single, #mode-batch, #nav-single, #connection-button, #connection-pill",
     )
     .forEach((b) => (b.disabled = value));
   $("generate-button").replaceChildren(
@@ -504,16 +504,9 @@ function setMode(value) {
   showNotice("");
   $("dynamic-fields").hidden = mode === "batch";
   $("batch-fields").hidden = mode !== "batch";
-  for (const id of ["mode-single", "nav-single"])
-    $(id).classList.toggle(
-      id.startsWith("nav") ? "active" : "selected",
-      mode === "single",
-    );
-  for (const id of ["mode-batch", "nav-batch"])
-    $(id).classList.toggle(
-      id.startsWith("nav") ? "active" : "selected",
-      mode === "batch",
-    );
+  $("nav-single").classList.add("active");
+  $("mode-single").classList.toggle("selected", mode === "single");
+  $("mode-batch").classList.toggle("selected", mode === "batch");
   $("breadcrumb-page").textContent =
     mode === "batch" ? "Buat sekaligus" : "Buat dokumen";
   setBusy(false);
@@ -663,6 +656,7 @@ async function connect() {
   try {
     await loadTemplates();
     setConnection(true);
+    if (window.location.hash === "#batch") setMode("batch");
     showNotice("");
   } catch (error) {
     setConnection(false);
@@ -673,7 +667,7 @@ async function connect() {
 $("connection-button").onclick = connect;
 $("connection-pill").onclick = connect;
 $("nav-single").onclick = $("mode-single").onclick = () => setMode("single");
-$("nav-batch").onclick = $("mode-batch").onclick = () => setMode("batch");
+$("mode-batch").onclick = () => setMode("batch");
 $("sample-button").onclick = () => {
   if (selected) {
     populate(selected.sampleData);
