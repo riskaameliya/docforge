@@ -149,6 +149,7 @@ export async function createApp(
     ["/converter", "public/converter.html", "text/html; charset=utf-8"],
     ["/converter.css", "public/converter.css", "text/css"],
     ["/converter.js", "public/converter.js", "text/javascript"],
+    ["/template-guide.js", "public/template-guide.js", "text/javascript"],
     ["/template-export.js", "public/template-export.js", "text/javascript"],
     [
       "/converter-vendor/fflate.js",

@@ -181,6 +181,266 @@
               <div id="export-empty">
                 Unggah PDF untuk melihat hasil konversi.
               </div>
+              <article
+                id="usage-guide"
+                class="usage-guide"
+                aria-label="Integrasi kode hasil ekspor ke proyek sendiri"
+                hidden
+              >
+                <header>
+                  <h3>Tempel template ke proyekmu, lalu isi datanya.</h3>
+                  <p>
+                    Gunakan kode hasil unduhan pada aplikasi yang sudah kamu
+                    punya. Tidak perlu membuat fitur upload atau konversi PDF
+                    lagi di aplikasi tersebut.
+                  </p>
+                  <p id="guide-context" class="guide-context"></p>
+                </header>
+                <nav class="guide-navigation" aria-label="Bagian panduan">
+                  <a href="#guide-integrate">1. Tempel dan panggil kode</a
+                  ><a href="#guide-library">2. Pilih library</a
+                  ><a href="#guide-pdf">3. Buat PDF</a
+                  ><a href="#guide-pdfjs">4. Preview dengan PDF.js</a>
+                </nav>
+                <section id="guide-integrate">
+                  <h4>1. File mana yang ditempel?</h4>
+                  <p>
+                    Salin <code data-template-file>TemplateDokumen.ts</code> ke
+                    folder template proyekmu. File ini sudah berisi fungsi, tipe
+                    data, HTML, CSS, dan gambar latar. Kamu tidak perlu memasang
+                    package DocForge, Handlebars, pdf-lib, atau menyertakan PDF
+                    asal untuk memakai fungsi ini.
+                  </p>
+                  <pre><code id="guide-files"></code></pre>
+                  <p>
+                    <strong>Satu file template sudah cukup.</strong> Impor dan
+                    panggil dari file aplikasi yang sudah ada, misalnya
+                    komponen, service, atau handler tombol. File pemanggil
+                    tambahan seperti <code>preview.ts</code> hanya untuk
+                    merapikan struktur; tidak wajib membuat aplikasi baru atau
+                    memakai semua file ZIP.
+                  </p>
+                  <p>
+                    Contoh frontend TypeScript: sediakan
+                    <code>&lt;div id="preview"&gt;&lt;/div&gt;</code> pada
+                    halaman, lalu gunakan kode ini:
+                  </p>
+                  <div class="guide-code-title">
+                    <strong>Impor template, kirim data, tampilkan HTML</strong
+                    ><button
+                      class="subtle-button"
+                      data-copy-guide="guide-integration"
+                      type="button"
+                    >
+                      Salin
+                    </button>
+                  </div>
+                  <pre
+                    class="guide-example"
+                  ><code id="guide-integration"></code></pre>
+                  <p>
+                    Ganti data contoh dengan data form, API, atau sumber data
+                    aplikasimu. Untuk React/Vue, panggil fungsi template dari
+                    komponen dan tampilkan hasilnya pada iframe melalui
+                    <code>srcDoc</code>/<code>srcdoc</code>. Sesuaikan path
+                    impor dengan proyekmu; contoh memakai ekstensi
+                    <code>.js</code> untuk resolusi modul Node/TypeScript.
+                  </p>
+                </section>
+                <section id="guide-library">
+                  <h4>2. Library apa yang dipakai di proyekmu?</h4>
+                  <div class="guide-table-wrap">
+                    <table class="guide-file-table">
+                      <thead>
+                        <tr>
+                          <th>Kebutuhan</th>
+                          <th>Yang dipakai</th>
+                          <th>Input</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Menampilkan desain sebagai HTML</td>
+                          <td>Fungsi template + iframe, tanpa package PDF</td>
+                          <td>Data → HTML</td>
+                        </tr>
+                        <tr>
+                          <td>Membuat file PDF</td>
+                          <td>
+                            Renderer HTML-ke-PDF, contoh Playwright di
+                            Node.js/server
+                          </td>
+                          <td>HTML → PDF</td>
+                        </tr>
+                        <tr>
+                          <td>Preview PDF di browser</td>
+                          <td><code>pdfjs-dist</code> (PDF.js)</td>
+                          <td>Byte PDF → canvas</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p>
+                    <strong>Kalau proyekmu sudah memakai PDF.js:</strong> hasil
+                    fungsi template perlu dijadikan PDF oleh renderer dahulu.
+                    PDF.js menerima PDF yang sudah jadi, bukan string HTML.
+                  </p>
+                  <pre><code>Template(data) → HTML → renderer PDF → byte PDF → PDF.js → canvas</code></pre>
+                  <p>
+                    Jika proyek sudah memiliki renderer HTML-ke-PDF, gunakan
+                    renderer tersebut. Playwright di bawah hanya salah satu
+                    contoh integrasi.
+                  </p>
+                </section>
+                <section id="guide-pdf">
+                  <h4>3. Contoh membuat PDF dengan Playwright</h4>
+                  <p>
+                    Pasang dependensi yang belum tersedia pada
+                    <strong>proyek Node.js milikmu</strong>. Tidak perlu
+                    menjalankan <code>init</code> atau membuat proyek baru.
+                  </p>
+                  <div class="guide-command-grid">
+                    <div>
+                      <div class="guide-code-title">
+                        <strong>npm</strong
+                        ><button
+                          class="subtle-button"
+                          data-copy-guide="guide-npm"
+                          type="button"
+                        >
+                          Salin
+                        </button>
+                      </div>
+                      <pre><code id="guide-npm">npm install playwright
+npm install --save-dev tsx
+npx playwright install chromium
+npx tsx example.ts</code></pre>
+                    </div>
+                    <div>
+                      <div class="guide-code-title">
+                        <strong>pnpm</strong
+                        ><button
+                          class="subtle-button"
+                          data-copy-guide="guide-pnpm"
+                          type="button"
+                        >
+                          Salin
+                        </button>
+                      </div>
+                      <pre><code id="guide-pnpm">pnpm add playwright
+pnpm add -D tsx
+pnpm exec playwright install chromium
+pnpm exec tsx example.ts</code></pre>
+                    </div>
+                  </div>
+                  <p>
+                    Playwright menjalankan Chromium untuk mencetak HTML menjadi
+                    PDF. <code>tsx</code> hanya diperlukan untuk menjalankan
+                    contoh TypeScript langsung; jika proyek sudah punya
+                    build/runner, gunakan yang sudah ada.
+                    <code>node:fs/promises</code> adalah modul bawaan Node.js.
+                    Contoh membutuhkan Node.js 22.13+. Pada Linux/server,
+                    dependensi Chromium dapat dipasang dengan
+                    <code>npx playwright install --with-deps chromium</code>.
+                  </p>
+                  <div class="guide-code-title">
+                    <strong
+                      >example.ts: panggil template yang sudah ditempel</strong
+                    ><button
+                      class="subtle-button"
+                      data-copy-guide="guide-example"
+                      type="button"
+                    >
+                      Salin
+                    </button>
+                  </div>
+                  <pre
+                    class="guide-example"
+                  ><code id="guide-example"></code></pre>
+                  <p>
+                    Contoh ZIP membuat <code>hasil.html</code> dan
+                    <code>hasil.pdf</code> agar mudah dicoba. Dalam backend
+                    aplikasi, kamu bisa mengambil Buffer dari
+                    <code>page.pdf()</code> dan mengirimnya sebagai respons
+                    <code>application/pdf</code> tanpa menyimpan file.
+                    Playwright dijalankan di server/Node.js, bukan langsung
+                    dalam komponen frontend.
+                  </p>
+                </section>
+                <section id="guide-pdfjs">
+                  <h4>4. Menampilkan PDF dengan PDF.js</h4>
+                  <p>
+                    Pasang library pada frontend:
+                    <code>npm install pdfjs-dist</code> atau
+                    <code>pnpm add pdfjs-dist</code>. Contoh berikut khusus
+                    proyek TypeScript dengan <strong>Vite</strong>, yang
+                    mendukung impor worker <code>?url</code>. Untuk bundler
+                    lain, sesuaikan konfigurasi worker dan pastikan versinya
+                    sama dengan library.
+                  </p>
+                  <p>
+                    Fungsi ini menerima byte PDF dari renderer/server aplikasimu
+                    dan elemen canvas yang sudah ada. Contoh menampilkan halaman
+                    pertama. Tidak ada proses membaca PDF asal untuk dikonversi
+                    ulang.
+                  </p>
+                  <div class="guide-code-title">
+                    <strong>preview-pdf.ts (frontend Vite)</strong
+                    ><button
+                      class="subtle-button"
+                      data-copy-guide="guide-pdfjs"
+                      type="button"
+                    >
+                      Salin
+                    </button>
+                  </div>
+                  <pre
+                    class="guide-example"
+                  ><code id="guide-pdfjs"></code></pre>
+                  <p>
+                    Setelah kode aplikasi menerima byte PDF, panggil
+                    <code>tampilkanPdf(pdfBytes, canvasElement)</code>.
+                    Pengambilan byte dari API mengikuti alur aplikasi yang sudah
+                    kamu punya. Ganti <code>getPage(1)</code> bila ingin
+                    menampilkan halaman lain.
+                  </p>
+                </section>
+                <section>
+                  <h4>File ZIP lain dan catatan integrasi</h4>
+                  <p>
+                    <code>example.ts</code> adalah contoh pemanggil.
+                    <code>template.html</code>, <code>schema.json</code>,
+                    <code>sample-data.json</code>, dan
+                    <code>config.json</code> merupakan jalur alternatif bagi
+                    renderer yang memakai format template DocForge. File-file
+                    tersebut tidak perlu diimpor jika kamu memakai fungsi
+                    template TypeScript.
+                  </p>
+                  <p>
+                    Tanggal memakai string <code>YYYY-MM-DD</code>. Validasi
+                    data eksternal tetap dilakukan oleh aplikasi pemanggil.
+                    Periksa font, posisi, dan teks panjang. Tabel berulang,
+                    pagination isi dinamis, dan logika aplikasi perlu
+                    disesuaikan di kode proyekmu.
+                  </p>
+                  <p class="guide-sources">
+                    Dokumentasi:
+                    <a
+                      href="https://mozilla.github.io/pdf.js/examples/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >PDF.js</a
+                    >
+                    dan
+                    <a
+                      href="https://playwright.dev/docs/library"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >Playwright</a
+                    >.
+                  </p>
+                </section>
+              </article>
               <iframe
                 id="html-preview"
                 title="Pratinjau template hasil konversi"

@@ -1,3 +1,4 @@
+import { templateGuide } from "/template-guide.js";
 import * as pdfjs from "/pdf-vendor/pdf.mjs";
 import { zipSync } from "/converter-vendor/fflate.js";
 import { exportTemplate, validIdentifier } from "/template-export.js";
@@ -52,10 +53,13 @@ function showTab(value) {
     .forEach((e) =>
       e.setAttribute("aria-selected", String(e.dataset.tab === tab)),
     );
-  $("export-empty").hidden = !!pages.length;
+  $("export-empty").hidden = !!pages.length || tab === "usage";
+  $("usage-guide").hidden = tab !== "usage";
+  if (tab === "usage") updateUsageGuide();
   $("html-preview").hidden = !output || tab !== "preview";
-  $("code-output").hidden = !pages.length || tab === "preview";
-  $("copy-code").hidden = !output || tab === "preview";
+  $("code-output").hidden =
+    !pages.length || tab === "preview" || tab === "usage";
+  $("copy-code").hidden = !output || tab === "preview" || tab === "usage";
   if (!output) {
     $("code-output").value =
       "Unggah PDF dan isi pemetaan yang valid untuk melihat kode.";
@@ -66,18 +70,47 @@ function showTab(value) {
       ? output.typescript
       : tab === "html"
         ? output.html
-        : tab === "usage"
-          ? output.usage
-          : JSON.stringify(
-              {
-                schema: output.schema,
-                sampleData: output.sampleData,
-                config: output.config,
-              },
-              null,
-              2,
-            );
+        : JSON.stringify(
+            {
+              schema: output.schema,
+              sampleData: output.sampleData,
+              config: output.config,
+            },
+            null,
+            2,
+          );
 }
+function updateUsageGuide() {
+  const name = output ? $("function-name").value.trim() : "TemplateDokumen";
+  const sample = output?.sampleData ?? { nama: "Siti", tanggal: "2026-11-09" };
+  document
+    .querySelectorAll("[data-template-file]")
+    .forEach((node) => (node.textContent = `${name}.ts`));
+  const guide = templateGuide(name, sample);
+  $("guide-example").textContent = output?.usage ?? guide.usage;
+  $("guide-integration").textContent = guide.integration;
+  $("guide-pdfjs").textContent = guide.pdfjs;
+  $("guide-context").textContent = output
+    ? "Contoh kode di bawah sudah memakai nama fungsi dan data pemetaanmu."
+    : "Ini contoh ilustrasi. Nama fungsi dan datanya akan mengikuti kode hasil ekspormu.";
+  $("guide-files").textContent =
+    `src/\n├── templates/${name}.ts  # Tempel file hasil ekspor di sini\n└── preview.ts                 # Atau panggil dari file aplikasi yang sudah ada`;
+}
+document.querySelectorAll("[data-copy-guide]").forEach((button) => {
+  button.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        $(button.dataset.copyGuide).textContent,
+      );
+      button.textContent = "Tersalin";
+      setTimeout(() => (button.textContent = "Salin"), 1500);
+    } catch {
+      status(
+        "Clipboard tidak tersedia. Pilih teks contoh dan salin secara manual.",
+      );
+    }
+  };
+});
 function showPage() {
   const p = pages[current];
   $("pdf-stage").replaceChildren();
@@ -492,10 +525,7 @@ $("download-package").onclick = () => {
   add("sample-data.json", JSON.stringify(output.sampleData, null, 2));
   add("config.json", JSON.stringify(output.config, null, 2));
   add("example.ts", output.usage);
-  add(
-    "README.md",
-    `# ${name}\n\n## TypeScript\nImpor fungsi dari ${name}.ts dan panggil menggunakan data di example.ts. Fungsi menghasilkan string HTML, tanpa dependensi proyek asal.\n\n## DocForge\nSalin template.html, schema.json, sample-data.json, dan config.json ke templates/<id>/. Mulai ulang atau muat ulang daftar template, lalu gunakan /generate.\n\n## Batas konversi\nLayout mengikuti koordinat PDF. Grafik/gambar latar disertakan sebagai PNG data URI, sementara teks yang terdeteksi menjadi elemen HTML. Jenis font dan posisi teks perlu diperiksa. Tabel tidak otomatis berubah menjadi loop; tambahkan loop atau layout mengalir secara manual. PDF scan tidak menjalankan OCR.\n\nHalaman dengan ukuran berbeda tetap memiliki ukuran CSS masing-masing; konfigurasi renderer DocForge mengikuti ukuran halaman pertama.\n`,
-  );
+  add("README.md", output.readme);
   download(name + ".zip", zipSync(files), "application/zip");
 };
 $("copy-code").onclick = async () => {

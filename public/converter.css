@@ -421,3 +421,137 @@
     min-width: 44px;
   }
 }
+.usage-guide {
+  max-width: 1000px;
+  margin: auto;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.usage-guide header h3 {
+  font-size: 22px;
+  color: var(--text);
+  font-weight: 400;
+  margin: 0 0 12px;
+}
+.usage-guide h4 {
+  font-size: 16px;
+  color: var(--text);
+  margin: 24px 0 12px;
+  font-weight: 500;
+}
+.usage-guide p {
+  margin: 12px 0;
+}
+.usage-guide strong {
+  font-weight: 500;
+  color: var(--text);
+}
+.usage-guide section {
+  padding: 8px 0 22px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: calc(var(--nav-height) + 20px);
+}
+.guide-context {
+  color: var(--amber);
+}
+.guide-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 18px 0 24px;
+}
+.guide-navigation a,
+.guide-sources a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.guide-navigation a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.usage-guide li {
+  padding-left: 4px;
+  margin: 8px 0;
+}
+.usage-guide ol,
+.usage-guide ul {
+  padding-left: 24px;
+}
+.usage-guide code {
+  font:
+    12px/1.8 ui-monospace,
+    monospace;
+  color: #d3d6ff;
+  overflow-wrap: anywhere;
+}
+.usage-guide pre {
+  padding: 18px;
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  overflow: auto;
+  max-width: 100%;
+  margin: 10px 0 18px;
+}
+.usage-guide pre code {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.guide-code-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.guide-command-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+}
+.guide-command-grid > div {
+  min-width: 0;
+}
+.guide-table-wrap {
+  overflow-x: auto;
+}
+.guide-file-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
+}
+.guide-file-table th,
+.guide-file-table td {
+  padding: 12px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+.guide-file-table th {
+  color: var(--text);
+  font-weight: 500;
+}
+.guide-file-table td:first-child {
+  min-width: 190px;
+}
+.guide-example {
+  max-height: 560px;
+}
+@media (max-width: 700px) {
+  .guide-command-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .usage-guide {
+    font-size: 12px;
+  }
+  .usage-guide header h3 {
+    font-size: 19px;
+  }
+  .usage-guide pre {
+    padding: 14px;
+  }
+}

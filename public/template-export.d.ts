@@ -41,4 +41,5 @@ export function exportTemplate(
   sampleData: Record<string, string | number>;
   config: Record<string, unknown>;
   usage: string;
+  readme: string;
 };

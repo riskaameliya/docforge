@@ -1,3 +1,5 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { expect, test } from "vitest";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { chromium } from "playwright";
@@ -5,7 +7,14 @@ import ts from "typescript";
 import { runInNewContext } from "node:vm";
 import sharp from "sharp";
 import { unzipSync } from "fflate";
-import { mkdtemp, readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  writeFile,
+  mkdir,
+  rm,
+  symlink,
+} from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import {
@@ -157,6 +166,56 @@ test("browser converts multipage PDF, exports usable TS and installs template ZI
     const errors: string[] = [];
     ui.on("pageerror", (e) => errors.push(e.message));
     await ui.goto(base + "/converter");
+    await ui.getByRole("tab", { name: "Cara pakai", exact: true }).click();
+    expect(await ui.locator("#usage-guide").isVisible()).toBe(true);
+    expect(await ui.locator("#guide-context").innerText()).toContain(
+      "ilustrasi",
+    );
+    expect(await ui.locator("#guide-integration").innerText()).toContain(
+      "tampilkanDokumen",
+    );
+    expect(await ui.locator("#guide-pdfjs").innerText()).toContain(
+      "pdfjs-dist",
+    );
+    expect(await ui.locator("#usage-guide").innerText()).not.toContain(
+      "Mulai dari PDF",
+    );
+    expect(await ui.locator("#guide-pnpm").innerText()).not.toContain(
+      "pnpm init",
+    );
+    expect(await ui.locator("#guide-pnpm").innerText()).toContain(
+      "pnpm exec tsx example.ts",
+    );
+    const viewerSource = (await ui.locator("#guide-pdfjs").textContent())!
+      .replace("from 'pdfjs-dist'", `from '${base}/pdf-vendor/pdf.mjs'`)
+      .replace(
+        "import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';",
+        `const workerUrl = '${base}/pdf-vendor/pdf.worker.mjs';`,
+      );
+    const viewerJs = ts.transpileModule(viewerSource, {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.ESNext,
+      },
+    }).outputText;
+    const viewerSize = await ui.evaluate(
+      async ({ code, bytes }) => {
+        const url = URL.createObjectURL(
+          new Blob([code], { type: "text/javascript" }),
+        );
+        try {
+          const viewer = await new Function("url", "return import(url)")(url);
+          const canvas = document.createElement("canvas");
+          await viewer.tampilkanPdf(new Uint8Array(bytes), canvas);
+          return { width: canvas.width, height: canvas.height };
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      },
+      { code: viewerJs, bytes: [...(await doc.save())] },
+    );
+    expect(viewerSize).toEqual({ width: 600, height: 750 });
+    await ui.getByRole("tab", { name: "Pratinjau HTML", exact: true }).click();
     await ui.locator("#pdf-file").setInputFiles({
       name: "surat-pemanggilan.pdf",
       mimeType: "application/pdf",
@@ -186,6 +245,17 @@ test("browser converts multipage PDF, exports usable TS and installs template ZI
     expect(await ui.locator("#code-output").inputValue()).toContain(
       "export const TemplateSuratPemanggilan",
     );
+    await ui.getByRole("tab", { name: "Cara pakai", exact: true }).click();
+    expect(await ui.locator("#guide-example").innerText()).toContain(
+      "TemplateSuratPemanggilan",
+    );
+    expect(await ui.locator("#guide-integration").innerText()).toContain(
+      "TemplateSuratPemanggilan",
+    );
+    expect(await ui.locator("#guide-example").innerText()).toContain(
+      '"nomorSurat": "999/2026"',
+    );
+    expect(await ui.locator("#code-output").isVisible()).toBe(false);
     await ui.getByRole("tab", { name: "Pratinjau HTML" }).click();
     await ui.waitForFunction(() =>
       document
@@ -215,6 +285,37 @@ test("browser converts multipage PDF, exports usable TS and installs template ZI
     const files = unzipSync(await readFile(archive));
     expect(Object.keys(files)).toContain("TemplateSuratPemanggilan.ts");
     expect(Object.keys(files)).toContain("example.ts");
+    expect(Buffer.from(files["README.md"]).toString()).toContain(
+      "pnpm exec tsx example.ts",
+    );
+    const standalone = path.join(root, "standalone");
+    await mkdir(standalone);
+    await writeFile(
+      path.join(standalone, "TemplateSuratPemanggilan.ts"),
+      files["TemplateSuratPemanggilan.ts"],
+    );
+    await writeFile(path.join(standalone, "example.ts"), files["example.ts"]);
+    await symlink(
+      path.resolve("node_modules"),
+      path.join(standalone, "node_modules"),
+      "dir",
+    );
+    await promisify(execFile)(
+      process.execPath,
+      ["--import", "tsx", "example.ts"],
+      { cwd: standalone, timeout: 20000 },
+    );
+    expect(
+      (
+        await PDFDocument.load(
+          await readFile(path.join(standalone, "hasil.pdf")),
+        )
+      ).getPageCount(),
+    ).toBe(2);
+    expect(
+      await readFile(path.join(standalone, "hasil.html"), "utf8"),
+    ).toContain("Nomor: 999/2026");
+
     const target = path.join(root, "converted");
     await mkdir(target);
     for (const filename of [
