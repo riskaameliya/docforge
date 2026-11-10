@@ -1,3 +1,4 @@
+import { templateGuide } from "./template-guide.js";
 // Shared by the browser converter and integration tests. No PDF execution is used.
 export function escapeHtml(value) {
   return String(value ?? "").replace(
@@ -169,6 +170,15 @@ export function exportTemplate(
     margin: 0,
     orientation: "portrait",
   };
-  const usage = `import { ${functionName} } from './${functionName}';\n\nconst html = ${functionName}(${JSON.stringify(sampleData, null, 2)});\n// Gunakan html sebagai konten renderer PDF atau pratinjau browser.\n`;
-  return { html, preview, typescript, schema, sampleData, config, usage };
+  const { usage, readme } = templateGuide(functionName, sampleData);
+  return {
+    html,
+    preview,
+    typescript,
+    schema,
+    sampleData,
+    config,
+    usage,
+    readme,
+  };
 }

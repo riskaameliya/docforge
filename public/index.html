@@ -3,102 +3,78 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#193f32" />
-    <title>DocForge — Buat dokumen dengan mudah</title>
+    <meta name="theme-color" content="#191b24" />
+    <title>DocForge · Buat dokumen</title>
+    <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
     <link rel="stylesheet" href="/ui.css" />
     <script type="module" src="/ui.js"></script>
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar">
+      <header class="sidebar">
         <a class="brand" href="/" aria-label="DocForge beranda"
-          ><span class="brand-icon">d<span>f</span><i></i></span
-          ><span>docforge<span class="brand-dot">.</span></span></a
+          ><img
+            class="brand-mark"
+            src="/logo-mark.svg"
+            alt=""
+            width="38"
+            height="32"
+          /><span class="brand-wordmark">doc<strong>forge</strong></span></a
         >
-        <div class="workspace-label">WORKSPACE</div>
         <nav aria-label="Navigasi utama">
-          <button class="nav-item active" id="nav-single">
-            <span aria-hidden="true">▤</span> Buat dokumen
-            <span class="nav-arrow">↗</span></button
-          ><button class="nav-item" id="nav-batch">
-            <span aria-hidden="true">▥</span> Buat sekaligus</button
-          ><a class="nav-item" href="/converter"
-            ><span aria-hidden="true">⌘</span> PDF ke kode
-            <span class="nav-arrow">↗</span></a
-          ><a class="nav-item" href="/editor"
-            ><span aria-hidden="true">⊞</span> Editor template
-            <span class="nav-arrow">↗</span></a
-          >
-        </nav>
-        <div class="sidebar-note">
-          <span class="note-icon">✦</span
-          ><strong>Satu template.<br />Banyak kemungkinan.</strong>
-          <p>
-            Dari sertifikat hingga laporan, biarkan DocForge mengurus
-            tampilannya.
-          </p>
-          <span class="note-line"></span>
-        </div>
-        <div class="sidebar-bottom">
-          <span class="avatar">DF</span>
-          <div>
-            <strong>DocForge publik</strong
-            ><small id="connection-label">Belum terhubung</small>
-          </div>
-          <button
-            class="icon-button"
-            id="connection-button"
-            aria-label="Muat ulang template"
-            title="Muat ulang template"
-          >
-            ⚙
+          <button class="nav-item active" id="nav-single" aria-current="page">
+            Buat dokumen
           </button>
-        </div>
-      </aside>
+          <a class="nav-item" href="/converter">PDF ke kode</a>
+        </nav>
+        <span class="nav-caption">Tanpa akun. Tanpa arsip.</span>
+      </header>
       <div class="main-shell">
-        <header class="topbar">
+        <div class="topbar">
           <div class="breadcrumb">
-            Workspace <span>/</span>
-            <strong id="breadcrumb-page">Buat dokumen</strong>
+            Ruang kerja <span>/</span
+            ><strong id="breadcrumb-page">Buat dokumen</strong>
           </div>
           <div class="topbar-right">
-            <button
+            <span id="connection-label" class="connection-label"
+              >Memuat template</span
+            ><button
               class="connection-pill"
               id="connection-pill"
               type="button"
               aria-label="Muat ulang template"
             >
-              <i></i> Belum terhubung</button
-            ><a href="/editor" class="text-link">Editor template ↗</a>
+              Muat ulang
+            </button>
           </div>
-        </header>
+        </div>
         <main>
           <div class="page-heading">
-            <div>
-              <p class="eyebrow"><span></span> DARI DATA JADI DOKUMEN</p>
-              <h1>Dokumen siap.<br /><span>Urusan jadi mudah.</span></h1>
+            <div class="heading-copy">
+              <h1>Mau buat apa hari ini?</h1>
               <p class="heading-description">
-                Pilih template, isi datanya, dan unduh hasilnya.<br />Dokumen
-                profesional, tanpa login atau kunci akses. Data diproses
-                sementara di server; hasil tidak diarsipkan.
+                Pilih template, isi datanya, lalu unduh. <br />Satu dokumen atau
+                banyak sekaligus.
               </p>
             </div>
-            <div class="heading-art" aria-hidden="true">
-              <div class="art-sheet back"></div>
-              <div class="art-sheet front">
-                <span class="art-seal">✧</span><i></i><i></i><b></b
-                ><em>docforge</em>
+            <div class="mascot-intro">
+              <img
+                src="/mascot.webp"
+                alt="Maskot kucing DocForge"
+                width="180"
+                height="190"
+              />
+              <div>
+                <span class="mascot-caption">Teman kerja barumu.</span>
+                <p>Biar dokumennya<br />kita rapikan di sini.</p>
               </div>
-              <span class="art-star">✳</span
-              ><span class="art-badge">Siap diunduh <span>✓</span></span>
             </div>
           </div>
           <div class="notice" id="notice" role="status" hidden></div>
           <section class="template-section" aria-labelledby="templates-heading">
             <div class="section-heading">
               <div>
-                <span class="step-number">01</span>
-                <h2 id="templates-heading">Pilih template</h2>
+                <h2 id="templates-heading">Jenis dokumen</h2>
               </div>
               <span class="section-hint" id="template-count"
                 >Memuat template…</span
@@ -112,8 +88,7 @@
             <section class="panel data-panel" aria-labelledby="data-heading">
               <div class="panel-heading">
                 <div>
-                  <span class="step-number">02</span>
-                  <h2 id="data-heading">Lengkapi data</h2>
+                  <h2 id="data-heading">Isi dokumen</h2>
                 </div>
                 <div class="segmented" aria-label="Mode pembuatan">
                   <button id="mode-single" class="selected" type="button">
@@ -127,9 +102,9 @@
                 </p>
                 <div>
                   <button class="subtle-button" id="sample-button" disabled>
-                    ↺ Data contoh</button
+                    Data contoh</button
                   ><button class="subtle-button" id="upload-button" disabled>
-                    ↥ Impor JSON</button
+                    Impor JSON</button
                   ><input
                     type="file"
                     id="json-file"
@@ -138,7 +113,65 @@
                   />
                 </div>
               </div>
+              <button
+                id="open-layout-editor"
+                type="button"
+                class="layout-launcher"
+                hidden
+              >
+                <span
+                  ><strong id="layout-launcher-title"
+                    >Edit desain sertifikat</strong
+                  ><small
+                    >Upload background, geser field, dan atur teks dalam satu
+                    layar.</small
+                  ></span
+                ><span aria-hidden="true">↗</span>
+              </button>
               <form id="document-form">
+                <details id="document-settings" class="document-settings">
+                  <summary>
+                    <span id="settings-title">Background dan posisi teks</span
+                    ><span class="settings-hint">Opsional</span>
+                  </summary>
+                  <div class="settings-content">
+                    <section
+                      id="report-columns"
+                      class="certificate-background"
+                      hidden
+                      aria-labelledby="report-columns-title"
+                    >
+                      <h3 id="report-columns-title">Kolom laporan</h3>
+                      <p>
+                        Atur judul, tipe data, dan urutan kolom (maksimal 12).
+                        Pengaturan berlaku untuk tabel dan hasil unduhan,
+                        termasuk batch. Menghapus kolom juga menghapus nilainya
+                        dari form.
+                      </p>
+                      <div id="report-column-list"></div>
+                      <div class="background-actions">
+                        <button
+                          id="add-report-column"
+                          class="subtle-button"
+                          type="button"
+                        >
+                          + Tambah kolom</button
+                        ><button
+                          id="reset-report-columns"
+                          class="subtle-button"
+                          type="button"
+                        >
+                          Kembalikan kolom bawaan
+                        </button>
+                      </div>
+                      <p class="helper">
+                        Untuk impor JSON, gunakan key yang ditampilkan di setiap
+                        kolom pada objek items. Data yang tidak cocok dengan
+                        tipe kolom akan ditolak saat membuat dokumen.
+                      </p>
+                    </section>
+                  </div>
+                </details>
                 <div id="dynamic-fields" class="form-fields">
                   <div class="empty-form">
                     <span>↖</span> Mulai dengan memilih template di atas.
@@ -193,7 +226,7 @@
                     class="primary-button"
                     disabled
                   >
-                    <span>✦</span> Buat dokumen <span>→</span>
+                    Buat dokumen
                   </button>
                 </div>
               </form>
@@ -204,25 +237,26 @@
             >
               <div class="panel-heading">
                 <div>
-                  <span class="step-number">03</span>
                   <h2 id="preview-heading">Pratinjau</h2>
                 </div>
-                <span class="preview-tag" id="preview-tag"
-                  >BELUM ADA HASIL</span
-                >
+                <span class="preview-tag" id="preview-tag">Belum dibuat</span>
               </div>
               <div class="preview-body" id="preview-body">
                 <div class="preview-empty">
-                  <div class="empty-document" aria-hidden="true">
-                    <span>✧</span><i></i><i></i><i></i><b></b>
-                  </div>
-                  <h3>Sebentar lagi, jadi dokumen.</h3>
+                  <img
+                    class="empty-mascot"
+                    src="/mascot.webp"
+                    alt=""
+                    width="150"
+                    height="168"
+                  />
+                  <h3>Dokumenmu akan muncul di sini.</h3>
                   <p>
-                    Hasil dokumenmu akan muncul di sini.<br />Periksa sebelum
-                    kamu mengunduhnya.
+                    Lengkapi data di sebelah kiri,<br />lalu pilih
+                    <strong>Buat dokumen</strong>.
                   </p>
                   <span class="preview-footnote"
-                    >PDF atau PNG · Tanpa arsip di server</span
+                    >Periksa hasilnya sebelum diunduh.</span
                   >
                 </div>
               </div>
@@ -231,20 +265,174 @@
                   <strong id="output-filename"></strong
                   ><small id="output-size"></small>
                 </div>
-                <a id="download-link" class="primary-button" download
-                  >↓ Unduh</a
-                >
+                <a id="download-link" class="primary-button" download>Unduh</a>
               </div>
             </section>
           </div>
           <footer class="page-footer">
             <span
-              ><span class="footer-mark">✧</span> Lebih sedikit pekerjaan
-              berulang. Lebih banyak hal yang selesai.</span
-            ><span>Made simple by <strong>docforge.</strong></span>
+              >Data diproses sementara. Hasil tidak diarsipkan di server.</span
+            ><span>docforge.</span>
           </footer>
         </main>
       </div>
     </div>
+    <dialog
+      id="layout-dialog"
+      class="layout-dialog"
+      aria-labelledby="layout-dialog-title"
+    >
+      <header class="layout-dialog-header">
+        <div>
+          <h2 id="layout-dialog-title">Desain sertifikat</h2>
+          <p>
+            Perubahan diterapkan langsung. Klik field pada kanvas untuk
+            mengaturnya.
+          </p>
+        </div>
+        <button id="close-layout-editor" type="button" class="primary-button">
+          Selesai
+        </button>
+      </header>
+      <section id="letter-options" class="layout-letter-options" hidden>
+        <label
+          ><input id="letter-custom-mode" type="checkbox" /> Gunakan layout
+          custom satu halaman</label
+        >
+        <p>
+          Nonaktifkan untuk memakai format surat bawaan dengan alur teks dan
+          halaman otomatis. Template Word dapat diekspor ke PDF sebelum
+          diunggah.
+        </p>
+      </section>
+      <section id="certificate-background" aria-labelledby="background-title">
+        <div class="layout-upload-bar">
+          <div>
+            <h3 id="background-title">Background sertifikat</h3>
+            <span id="background-name" role="status"
+              >Menggunakan desain bawaan</span
+            >
+          </div>
+          <img
+            id="background-preview"
+            alt="Background yang dipilih"
+            hidden
+          /><label
+            id="background-file-label"
+            class="layout-upload-button"
+            for="background-file"
+            >Pilih PNG/JPG (maks. 5 MB)</label
+          ><input
+            id="background-file"
+            class="layout-file-input"
+            type="file"
+            accept="image/png,image/jpeg"
+          /><button
+            id="reset-background"
+            class="subtle-button"
+            type="button"
+            hidden
+          >
+            Gunakan desain bawaan
+          </button>
+        </div>
+        <p
+          id="background-error"
+          class="background-error"
+          role="alert"
+          hidden
+        ></p>
+        <div class="layout-editor-grid">
+          <div class="layout-stage-column">
+            <div class="layout-stage-toolbar">
+              <span
+                >Geser field atau tarik sudutnya. Panah: geser. Shift + panah:
+                ubah ukuran.</span
+              ><span id="layout-page-size">A4 landscape</span>
+            </div>
+            <div id="layout-canvas-viewport">
+              <div
+                id="certificate-layout"
+                aria-label="Peta posisi field sertifikat"
+              ></div>
+            </div>
+            <p id="background-description" class="layout-stage-note">
+              Area teks ditampilkan sebagai kotak. Periksa hasil PDF/PNG setelah
+              selesai mengatur desain.
+            </p>
+          </div>
+          <aside
+            id="certificate-settings"
+            class="layout-inspector"
+            aria-labelledby="layout-settings-title"
+          >
+            <div class="layout-inspector-header">
+              <h3 id="layout-settings-title">Field dan posisi</h3>
+              <button
+                id="add-certificate-field"
+                class="subtle-button"
+                type="button"
+              >
+                + Tambah field
+              </button>
+            </div>
+            <div class="layout-inspector-scroll">
+              <div
+                id="certificate-field-tabs"
+                class="layout-field-picker"
+                role="group"
+                aria-label="Pilih field untuk diatur"
+              ></div>
+              <div id="certificate-field-list"></div>
+              <details id="default-certificate-guide">
+                <summary>Panduan desain dan posisi bawaan</summary>
+                <p>
+                  Gunakan A4 landscape (297 × 210 mm), misalnya 1684 × 1190 px
+                  atau 3508 × 2480 px (maks. 16 megapiksel). Gambar dipasang
+                  utuh ke A4; rasio berbeda diberi ruang putih tanpa dipotong.
+                  Jangan tulis data peserta pada gambar; sisakan area berikut.
+                  Posisi dihitung dari sudut kiri atas.
+                </p>
+                <div
+                  id="certificate-guide"
+                  class="certificate-guide"
+                  aria-label="Panduan posisi teks sertifikat"
+                ></div>
+                <ul>
+                  <li>Nama: kiri 12%, atas 43%, lebar 76%, tinggi 12%.</li>
+                  <li>Kegiatan: kiri 15%, atas 63%, lebar 70%, tinggi 10%.</li>
+                  <li>Tanggal: kiri 30%, atas 75%, lebar 40%, tinggi 6%.</li>
+                  <li>
+                    Nomor: kiri 5,34%, atas 89,92%, lebar 35,63%, tinggi 4,20%.
+                  </li>
+                </ul>
+                <p>
+                  Tempatkan judul, logo, bingkai, dan tanda tangan di luar kotak
+                  tersebut. Gunakan warna latar terang pada area teks agar
+                  tulisan gelap terbaca. Teks panjang akan diperkecil otomatis.
+                  Periksa pratinjau sebelum mencetak. Untuk posisi berbeda,
+                  gunakan pengaturan field di atas.
+                </p>
+                <button id="download-guide" class="subtle-button" type="button">
+                  ↓ Unduh panduan posisi (SVG)
+                </button>
+              </details>
+            </div>
+            <div class="layout-inspector-footer">
+              <button
+                id="reset-certificate-fields"
+                class="subtle-button"
+                type="button"
+              >
+                Kembalikan field bawaan</button
+              ><small
+                >Maksimal 20 field. Key JSON dapat dipakai untuk impor dan
+                batch.</small
+              >
+            </div>
+          </aside>
+        </div>
+      </section>
+    </dialog>
   </body>
 </html>

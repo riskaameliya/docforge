@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import sharp from "sharp";
 import { chromium } from "playwright";
 import { readFile, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
@@ -40,12 +41,96 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     expect(await page.locator("#api-key").count()).toBe(0);
     expect(await page.locator(".template-card").count()).toBe(3);
     expect(await page.locator("#field-nama").inputValue()).toContain("Siti");
+    await page.locator("#open-layout-editor").click();
     await page.screenshot({
       path: "/tmp/docforge-ui-desktop.png",
       fullPage: true,
     });
+    await page
+      .getByText("Panduan desain dan posisi bawaan", { exact: true })
+      .click();
+    expect(await page.locator("#certificate-guide svg").count()).toBe(1);
+    const guideEvent = page.waitForEvent("download");
+    await page.locator("#download-guide").click();
+    expect((await guideEvent).suggestedFilename()).toBe(
+      "panduan-background-sertifikat.svg",
+    );
+    await page.locator("#background-file").setInputFiles({
+      name: "rusak.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("not an image"),
+    });
+    await page.waitForFunction(
+      () => !document.getElementById("background-error")?.hidden,
+    );
+    expect(await page.locator("#generate-button").isDisabled()).toBe(true);
+    expect(await page.locator("#background-name").innerText()).toContain(
+      "belum diterapkan",
+    );
+    await page.locator("#background-file").setInputFiles({
+      name: "desain.png",
+      mimeType: "image/png",
+      buffer: await sharp({
+        create: {
+          width: 1600,
+          height: 900,
+          channels: 3,
+          background: "#eef4e8",
+        },
+      })
+        .png()
+        .toBuffer(),
+    });
+    await page.waitForFunction(
+      () =>
+        document.getElementById("background-name")?.textContent ===
+        "desain.png",
+    );
+    expect(await page.locator("#background-preview").isVisible()).toBe(true);
+    expect(
+      await page
+        .locator("#background-file")
+        .evaluate((input: HTMLInputElement) => input.files?.[0]?.name),
+    ).toBe("desain.png");
+    expect(await page.locator("#background-error").isVisible()).toBe(false);
+    await page
+      .getByRole("button", { name: "+ Tambah field", exact: true })
+      .click();
+    await page.getByLabel("Judul field 5", { exact: true }).fill("Instansi");
+    await page.getByLabel("Judul field 5", { exact: true }).press("Tab");
+    await page.getByLabel("Kiri (%) field 5", { exact: true }).fill("10");
+    await page.getByLabel("Kiri (%) field 5", { exact: true }).press("Tab");
+
+    const fieldBox = page.getByRole("button", {
+      name: "Geser field Instansi",
+      exact: true,
+    });
+    await fieldBox.focus();
+    await page.keyboard.press("ArrowRight");
+    expect(
+      await page.getByLabel("Kiri (%) field 5", { exact: true }).inputValue(),
+    ).toBe("11");
+    await page.keyboard.press("Shift+ArrowRight");
+    expect(
+      await page.getByLabel("Lebar (%) field 5", { exact: true }).inputValue(),
+    ).toBe("61");
+    const canvasBounds = await page
+      .locator("#certificate-layout")
+      .boundingBox();
+    expect(canvasBounds!.y).toBeGreaterThanOrEqual(0);
+    expect(canvasBounds!.y + canvasBounds!.height).toBeLessThanOrEqual(1100);
+    await page.locator("#close-layout-editor").click();
+    await page.locator("#field-field1").fill("Universitas Contoh");
+    const certificateRequest = page.waitForRequest((request) =>
+      request.url().endsWith("/generate"),
+    );
     await page.locator("#field-nama").fill("Dr. Éka Pratiwi, S.T.");
     await page.locator("#generate-button").click();
+    const certificatePayload = (await certificateRequest).postDataJSON();
+    expect(certificatePayload.certificateFields[4].label).toBe("Instansi");
+    expect(certificatePayload.certificateFields[4].x).toBe(11);
+    expect(certificatePayload.data.field1).toBe("Universitas Contoh");
+
     await page.waitForFunction(
       () => !document.getElementById("preview-download")?.hidden,
     );
@@ -69,6 +154,9 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     );
     await page.locator('[data-template="surat-resmi"]').click();
     await page.waitForSelector("#field-penerima");
+    expect(await page.locator("#certificate-background").isVisible()).toBe(
+      false,
+    );
     await page.locator("#json-file").setInputFiles({
       name: "data.json",
       mimeType: "application/json",
@@ -87,15 +175,140 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
         (document.getElementById("field-penerima") as HTMLInputElement)
           ?.value === "Siti",
     );
+    expect(await page.locator("#document-settings").isVisible()).toBe(false);
+    await page.getByRole("button", { name: /Edit desain surat/ }).click();
+    expect(await page.locator("#letter-custom-mode").isChecked()).toBe(true);
+    expect(await page.locator("#certificate-background").isVisible()).toBe(
+      true,
+    );
+    expect(await page.locator("#background-name").innerText()).toContain(
+      "Halaman putih",
+    );
+    const multipage = await (await import("pdf-lib")).PDFDocument.create();
+    multipage.addPage([595, 842]);
+    multipage.addPage([595, 842]);
+    await page.locator("#background-file").setInputFiles({
+      name: "dua-halaman.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from(await multipage.save()),
+    });
+    await page.waitForFunction(
+      () => !document.getElementById("background-error")?.hidden,
+    );
+    expect(await page.locator("#background-error").innerText()).toContain(
+      "satu halaman",
+    );
+    expect(await page.locator("#generate-button").isDisabled()).toBe(true);
+    const letterDoc = await (await import("pdf-lib")).PDFDocument.create();
+    const letterPage = letterDoc.addPage([595, 842]);
+    letterPage.drawText("KOP ORGANISASI", { x: 50, y: 780 });
+    await page.locator("#background-file").setInputFiles({
+      name: "kop.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from(await letterDoc.save()),
+    });
+    await page.waitForFunction(
+      () =>
+        document.getElementById("background-name")?.textContent === "kop.pdf",
+    );
+    expect(await page.locator("#background-preview").isVisible()).toBe(true);
+    await page
+      .getByRole("button", { name: "Pilih field Isi", exact: true })
+      .click();
+    await page.getByLabel("Atas (%) field 4", { exact: true }).fill("40");
+    await page.getByLabel("Atas (%) field 4", { exact: true }).press("Tab");
+    await page.locator("#close-layout-editor").click();
+    const letterRequest = page.waitForRequest((request) =>
+      request.url().endsWith("/generate"),
+    );
+    await page.locator("#generate-button").click();
+    const letterPayload = (await letterRequest).postDataJSON();
+    expect(letterPayload.letterFields[3].y).toBe(40);
+    expect(letterPayload.background).toMatch(/^data:image\/jpeg;base64,/);
+    expect(letterPayload.certificateFields).toBeUndefined();
+    await page.waitForFunction(
+      () => !document.getElementById("preview-download")?.hidden,
+    );
+    await page.locator("#open-layout-editor").click();
+    await page.locator("#letter-custom-mode").uncheck();
+    await page.locator("#close-layout-editor").click();
+    expect(await page.locator("#certificate-background").isVisible()).toBe(
+      false,
+    );
     await page.locator('[data-template="laporan"]').click();
     await page.waitForSelector(".data-table");
-    expect(await page.locator(".data-table tbody tr").count()).toBe(80);
+    await page.locator("#document-settings > summary").click();
+    const initialRows = await page.locator(".data-table tbody tr").count();
+    expect(initialRows).toBeGreaterThan(0);
     await page.getByRole("button", { name: "+ Tambah baris" }).click();
-    expect(await page.locator(".data-table tbody tr").count()).toBe(81);
+    expect(await page.locator(".data-table tbody tr").count()).toBe(
+      initialRows + 1,
+    );
     await page.getByRole("button", { name: "Hapus baris" }).last().click();
-    expect(await page.locator(".data-table tbody tr").count()).toBe(80);
+    expect(await page.locator(".data-table tbody tr").count()).toBe(
+      initialRows,
+    );
+    await page
+      .getByRole("button", { name: "+ Tambah kolom", exact: true })
+      .click();
+    await page
+      .getByLabel("Judul kolom 4", { exact: true })
+      .fill("Harga satuan");
+    await page.getByLabel("Judul kolom 4", { exact: true }).press("Tab");
+    await page
+      .getByLabel("Tipe kolom 4", { exact: true })
+      .selectOption("number");
+    expect(await page.locator(".data-table th").allTextContents()).toContain(
+      "Harga satuan",
+    );
+    await page.locator('[data-path="items.0.kolom1"]').fill("12500");
+    await page
+      .getByRole("button", { name: "Naikkan kolom 4", exact: true })
+      .click();
+    expect(await page.locator(".data-table th").nth(2).innerText()).toBe(
+      "Harga satuan",
+    );
+    expect(
+      await page.locator('[data-path="items.0.kolom1"]').inputValue(),
+    ).toBe("12500");
+    await page
+      .getByRole("button", { name: "Hapus kolom 4", exact: true })
+      .click();
+    expect(
+      await page.locator(".data-table th").allTextContents(),
+    ).not.toContain("Keterangan");
+    const reportRequest = page.waitForRequest((request) =>
+      request.url().endsWith("/generate"),
+    );
+    await page.locator("#generate-button").click();
+    expect(
+      (await reportRequest)
+        .postDataJSON()
+        .columns.map((column: { label: string }) => column.label),
+    ).toEqual(["Nama", "Jumlah", "Harga satuan"]);
+    await page.waitForFunction(
+      () => !document.getElementById("preview-download")?.hidden,
+    );
+    await page.getByRole("button", { name: "Kembalikan kolom bawaan" }).click();
+    expect(await page.locator(".data-table th").allTextContents()).toContain(
+      "Keterangan",
+    );
     await page.locator('[data-template="sertifikat"]').click();
     await page.waitForSelector("#field-nama");
+    await page.locator("#open-layout-editor").click();
+    expect(await page.locator("#background-name").innerText()).toBe(
+      "desain.png",
+    );
+    expect(await page.locator("#field-field1").count()).toBe(1);
+    await page
+      .getByRole("button", { name: "Kembalikan field bawaan", exact: true })
+      .click();
+    expect(await page.locator("#field-field1").count()).toBe(0);
+    await page.locator("#reset-background").click();
+    expect(await page.locator("#background-name").innerText()).toContain(
+      "bawaan",
+    );
+    await page.locator("#close-layout-editor").click();
     await page.locator("#field-nama").fill("");
     await page.locator("#mode-batch").click();
     const zip = zipSync({ "report.json": Buffer.from('{"succeeded":1}') });

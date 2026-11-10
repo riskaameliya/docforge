@@ -1,3 +1,4 @@
+import type { CertificateField } from "./certificate.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
@@ -97,22 +98,81 @@ export async function renderOverlay(
   format: "pdf" | "png",
   data: any,
   renderer: Renderer,
+  customBackground?: string,
+  customFields?: CertificateField[],
 ): Promise<Buffer> {
   const fields = fieldsSchema.parse(
-    JSON.parse(await readFile(path.join(t.dir, "fields.json"), "utf8")),
+    customFields
+      ? customFields.map((f) => ({
+          ...f,
+          page: 1,
+          unit: "percent",
+          font: "NotoSans-Regular.ttf",
+          autoShrink: true,
+          wrap: true,
+          minFontSize: 6,
+        }))
+      : JSON.parse(await readFile(path.join(t.dir, "fields.json"), "utf8")),
   );
   const background = t.config.background;
-  if (!background || !/^.+\.(pdf|png)$/i.test(background))
+  const letter = t.id === "surat-resmi";
+  const [pageWidth, pageHeight] = letter ? [595, 842] : [842, 595];
+  if (!letter && (!background || !/^.+\.(pdf|png)$/i.test(background)))
     throw new Error("Background wajib PDF/PNG");
-  const bytes = await renderer.templates.local(t.dir, background);
-  const isPdf = background.toLowerCase().endsWith(".pdf");
+  let bytes: Buffer;
+  if (customBackground) {
+    try {
+      const raw = Buffer.from(customBackground.split(",")[1], "base64");
+      if (raw.length > 5 * 1024 * 1024) throw new Error();
+      const image = sharp(raw, { limitInputPixels: 16000000 });
+      const metadata = await image.metadata();
+      if (
+        !["png", "jpeg"].includes(metadata.format ?? "") ||
+        !metadata.width ||
+        !metadata.height ||
+        (metadata.pages ?? 1) > 1
+      )
+        throw new Error();
+      bytes = await image
+        .rotate()
+        .resize(pageWidth * 2, pageHeight * 2, {
+          fit: "contain",
+          position: letter ? "north" : "centre",
+          background: "#ffffff",
+        })
+        .png()
+        .toBuffer();
+    } catch {
+      throw new ApiError(
+        422,
+        "Background harus PNG/JPG valid, maksimal 5 MB dan 16 megapiksel.",
+      );
+    }
+  } else if (letter)
+    bytes = await sharp({
+      create: {
+        width: pageWidth * 2,
+        height: pageHeight * 2,
+        channels: 3,
+        background: "white",
+      },
+    })
+      .png()
+      .toBuffer();
+  else bytes = await renderer.templates.local(t.dir, background!);
+  const isPdf =
+    !letter && !customBackground && background!.toLowerCase().endsWith(".pdf");
   const doc = isPdf
     ? await PDFDocument.load(bytes)
     : await PDFDocument.create();
   doc.registerFontkit(fontkit);
   if (!isPdf) {
     const m = await sharp(bytes).metadata();
-    const page = doc.addPage([(m.width! * 72) / 96, (m.height! * 72) / 96]);
+    const page = doc.addPage(
+      customBackground || letter
+        ? [pageWidth, pageHeight]
+        : [(m.width! * 72) / 96, (m.height! * 72) / 96],
+    );
     const image = await doc.embedPng(bytes);
     page.drawImage(image, {
       x: 0,

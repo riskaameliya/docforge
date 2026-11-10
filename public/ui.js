@@ -1,24 +1,38 @@
+let activeCertificateKey;
+let defaultBackgroundPreview;
+const overlayStates = {};
+let originalLetterSchema;
+function usesOverlay() {
+  return (
+    selected?.id === "sertifikat" ||
+    (selected?.id === "surat-resmi" && $("letter-custom-mode").checked)
+  );
+}
+let certificateFields;
+let defaultCertificateFields;
+const defaultReportColumns = [
+  { key: "nama", label: "Nama", type: "string", required: true },
+  { key: "jumlah", label: "Jumlah", type: "number", required: true },
+  { key: "keterangan", label: "Keterangan", type: "string", required: false },
+];
+let reportColumns = structuredClone(defaultReportColumns);
+let certificateBackground;
+let backgroundError = false;
 const $ = (id) => document.getElementById(id);
 const metadata = {
   sertifikat: {
     title: "Sertifikat",
-    description: "Apresiasi yang berkesan",
-    badge: "OVERLAY · LANDSCAPE",
-    icon: "✧",
+    description: "Nama, kegiatan, dan desainmu.",
     style: "",
   },
   "surat-resmi": {
     title: "Surat resmi",
-    description: "Korespondensi profesional",
-    badge: "HTML · A4",
-    icon: "▤",
+    description: "Kop sendiri atau format bawaan.",
     style: "letter",
   },
   laporan: {
     title: "Laporan",
-    description: "Data tersusun, mudah dibaca",
-    badge: "HTML · TABEL",
-    icon: "▥",
+    description: "Tabel dengan kolom pilihanmu.",
     style: "report",
   },
 };
@@ -47,34 +61,47 @@ function showNotice(message, success = false) {
 function setConnection(value) {
   connected = value;
   $("connection-pill").classList.toggle("connected", value);
-  $("connection-pill").replaceChildren(
-    element("i"),
-    document.createTextNode(value ? "Terhubung" : "Belum terhubung"),
-  );
+  $("connection-pill").textContent = "Muat ulang";
   $("connection-label").textContent = value
-    ? "Terhubung · Siap digunakan"
+    ? "Siap digunakan"
     : "Belum terhubung";
 }
 function resetOutput() {
   if (outputUrl) URL.revokeObjectURL(outputUrl);
   outputUrl = null;
   $("preview-body").innerHTML = emptyPreview;
-  $("preview-tag").textContent = "BELUM ADA HASIL";
+  $("preview-tag").textContent = "Belum dibuat";
   $("preview-download").hidden = true;
   $("download-link").removeAttribute("href");
 }
 function setBusy(value) {
   busy = value;
-  $("generate-button").disabled = value || !selected || !connected;
+  document.body.classList.toggle("is-processing", value);
+  $("background-file").disabled = value;
+  $("open-layout-editor").disabled = value;
+  $("close-layout-editor").disabled = value;
+  $("letter-custom-mode").disabled = value;
+  $("certificate-settings")
+    .querySelectorAll("input, select, button")
+    .forEach((control) => (control.disabled = value));
+  $("certificate-layout").inert = value;
+  if (!value && certificateFields) renderCertificateFields();
+  $("report-columns")
+    .querySelectorAll("input, select, button")
+    .forEach((control) => (control.disabled = value));
+  if (!value) renderReportColumns();
+  $("reset-background").disabled = value;
+  $("generate-button").disabled =
+    value || !selected || !connected || (usesOverlay() && backgroundError);
   $("sample-button").disabled = value || !selected;
   $("upload-button").disabled = value || !selected;
   document
     .querySelectorAll(
-      ".template-card, #mode-single, #mode-batch, #nav-single, #nav-batch, #connection-button, #connection-pill",
+      ".template-card, #mode-single, #mode-batch, #nav-single, #connection-pill",
     )
     .forEach((b) => (b.disabled = value));
   $("generate-button").replaceChildren(
-    element("span", value ? "spinner" : "", value ? "" : "✦"),
+    ...(value ? [element("span", "spinner")] : []),
     document.createTextNode(
       value
         ? "Sedang memproses…"
@@ -82,8 +109,8 @@ function setBusy(value) {
           ? "Buat semua dokumen"
           : "Buat dokumen",
     ),
-    element("span", "", value ? "" : "→"),
   );
+  $("preview-body").setAttribute("aria-busy", String(value));
 }
 async function request(url, options = {}) {
   const headers = {
@@ -122,8 +149,6 @@ async function loadTemplates() {
     const info = metadata[template.id] || {
       title: pretty(template.id),
       description: "Template dokumen",
-      badge: template.type.toUpperCase(),
-      icon: "▤",
       style: "letter",
     };
     const card = element("button", "template-card");
@@ -132,17 +157,16 @@ async function loadTemplates() {
     card.setAttribute("aria-pressed", "false");
     const mini = element("div", `template-mini ${info.style}`);
     mini.setAttribute("aria-hidden", "true");
-    mini.append(
-      element("span", "", info.icon),
-      element("i"),
-      element("i"),
-      element("i"),
-    );
+    mini.innerHTML =
+      template.id === "laporan"
+        ? '<svg viewBox="0 0 32 32" fill="none"><rect x="5" y="6" width="22" height="21" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 13h22M13 13v14M21 13v14M5 20h22" stroke="currentColor" stroke-width="1.5"/></svg>'
+        : template.id === "sertifikat"
+          ? '<svg viewBox="0 0 32 32" fill="none"><rect x="4" y="7" width="24" height="17" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10 12h12M10 16h7" stroke="currentColor" stroke-width="1.5"/><circle cx="22" cy="22" r="4" fill="currentColor"/><path d="m20 25-1 5 3-2 3 2-1-5" fill="currentColor"/></svg>'
+          : '<svg viewBox="0 0 32 32" fill="none"><path d="M8 4h11l6 6v18H8V4Z" stroke="currentColor" stroke-width="1.5"/><path d="M19 4v7h6M12 16h9M12 20h9M12 24h6" stroke="currentColor" stroke-width="1.5"/></svg>';
     const copy = element("div");
     copy.append(
       element("strong", "", info.title),
       element("p", "", info.description),
-      element("small", "", info.badge),
     );
     card.append(mini, copy, element("span", "selection-dot"));
     card.addEventListener("click", () =>
@@ -172,7 +196,96 @@ async function selectTemplate(id) {
     await request(`/templates/${encodeURIComponent(id)}`)
   ).json();
   if (version !== selectionVersion) return;
+  if (selected && ["sertifikat", "surat-resmi"].includes(selected.id)) {
+    overlayStates[selected.id] = {
+      fields: certificateFields,
+      background: certificateBackground,
+      error: backgroundError,
+      name: $("background-name").textContent,
+      message: $("background-error").textContent,
+    };
+  }
   selected = template;
+  $("letter-options").hidden = id !== "surat-resmi";
+  if (id === "surat-resmi")
+    originalLetterSchema = structuredClone(template.schema);
+  $("settings-title").textContent =
+    id === "laporan"
+      ? "Atur kolom laporan"
+      : id === "surat-resmi"
+        ? "Kop surat dan posisi isi"
+        : "Background, field, dan posisi";
+  $("report-columns").hidden = id !== "laporan";
+  if (id === "laporan") syncReportSchema();
+  if (["sertifikat", "surat-resmi"].includes(id)) {
+    const state = overlayStates[id];
+    defaultCertificateFields = structuredClone(
+      id === "sertifikat" ? template.certificateFields : template.letterFields,
+    );
+    certificateFields =
+      state?.fields ?? structuredClone(defaultCertificateFields);
+    certificateBackground = state?.background;
+    backgroundError = state?.error ?? false;
+    $("background-name").textContent =
+      state?.name ??
+      (id === "surat-resmi"
+        ? "Halaman putih tanpa kop"
+        : "Menggunakan desain bawaan");
+    $("background-error").textContent = state?.message ?? "";
+    $("background-error").hidden = !backgroundError;
+    $("background-file").value = "";
+    $("background-preview").hidden = !certificateBackground;
+    if (certificateBackground)
+      $("background-preview").src = certificateBackground;
+    else $("background-preview").removeAttribute("src");
+    $("reset-background").hidden = !certificateBackground && !backgroundError;
+    if (usesOverlay()) syncCertificateSchema();
+    renderCertificateFields();
+    const letter = id === "surat-resmi";
+    $("layout-launcher-title").textContent = letter
+      ? "Edit desain surat"
+      : "Edit desain sertifikat";
+    $("layout-dialog-title").textContent = letter
+      ? "Desain surat resmi"
+      : "Desain sertifikat";
+    $("layout-page-size").textContent = letter ? "A4 portrait" : "A4 landscape";
+    $("background-description").textContent = letter
+      ? "Kop ditempatkan di atas halaman. Pilih field pada kanvas untuk mengatur area isinya."
+      : "Pilih field di kanvas atau daftar di samping. Periksa hasil PDF/PNG setelah selesai mengatur desain.";
+    $("background-preview").style.objectPosition = letter ? "top" : "center";
+    $("background-preview").alt = letter
+      ? "Kop atau template surat yang dipilih"
+      : "Background sertifikat yang dipilih";
+    $("certificate-layout").setAttribute(
+      "aria-label",
+      letter ? "Peta posisi isi surat" : "Peta posisi field sertifikat",
+    );
+    $("background-title").textContent = letter
+      ? "Kop/template dan isi surat"
+      : "Background sertifikat";
+    $("background-file-label").textContent = letter
+      ? "Pilih kop/template PNG, JPG, atau PDF satu halaman (maks. 5 MB)"
+      : "Pilih gambar PNG/JPG (maks. 5 MB)";
+    $("background-file").accept = letter
+      ? "image/png,image/jpeg,application/pdf"
+      : "image/png,image/jpeg";
+    $("layout-settings-title").textContent = "Field dan posisi";
+    $("default-certificate-guide").hidden = letter;
+    $("certificate-layout").style.aspectRatio = letter
+      ? "595 / 842"
+      : "842 / 595";
+    $("background-preview").style.aspectRatio = letter
+      ? "595 / 842"
+      : "842 / 595";
+    $("reset-background").textContent = letter
+      ? "Hapus kop/template"
+      : "Gunakan desain bawaan";
+  }
+  $("certificate-background").hidden = !usesOverlay();
+  $("open-layout-editor").hidden = !["sertifikat", "surat-resmi"].includes(
+    selected.id,
+  );
+  $("document-settings").hidden = selected.id !== "laporan";
   resetOutput();
   showNotice("");
   document.querySelectorAll(".template-card").forEach((card) => {
@@ -193,7 +306,7 @@ function makeScalar(name, definition, value, path, label = true) {
     (typeof value === "string" && value.length > 140);
   if (multiline) wrapper.classList.add("full");
   if (label) {
-    const title = element("label", "", pretty(name));
+    const title = element("label", "", definition.label || pretty(name));
     title.htmlFor = id;
     title.append(
       element(
@@ -275,7 +388,13 @@ function makeArray(name, definition, values = []) {
     headRow = element("tr"),
     body = element("tbody");
   for (const [key, def] of columns)
-    headRow.append(element("th", "", pretty(key) + (def.required ? " *" : "")));
+    headRow.append(
+      element(
+        "th",
+        "",
+        (def.label || pretty(key)) + (def.required ? " *" : ""),
+      ),
+    );
   headRow.append(element("th", "", ""));
   head.append(headRow);
   table.append(head, body);
@@ -393,16 +512,9 @@ function setMode(value) {
   showNotice("");
   $("dynamic-fields").hidden = mode === "batch";
   $("batch-fields").hidden = mode !== "batch";
-  for (const id of ["mode-single", "nav-single"])
-    $(id).classList.toggle(
-      id.startsWith("nav") ? "active" : "selected",
-      mode === "single",
-    );
-  for (const id of ["mode-batch", "nav-batch"])
-    $(id).classList.toggle(
-      id.startsWith("nav") ? "active" : "selected",
-      mode === "batch",
-    );
+  $("nav-single").classList.add("active");
+  $("mode-single").classList.toggle("selected", mode === "single");
+  $("mode-batch").classList.toggle("selected", mode === "batch");
   $("breadcrumb-page").textContent =
     mode === "batch" ? "Buat sekaligus" : "Buat dokumen";
   setBusy(false);
@@ -472,6 +584,7 @@ function showOutput(blob, format) {
 $("document-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (busy || !selected) return;
+  if (usesOverlay() && backgroundError) return;
   clearErrors();
   showNotice("");
   const format = document.querySelector('input[name="format"]:checked').value;
@@ -491,6 +604,14 @@ $("document-form").addEventListener("submit", async (event) => {
         template: selected.id,
         format,
         data,
+        letterFields:
+          selected.id === "surat-resmi" && usesOverlay()
+            ? certificateFields
+            : undefined,
+        certificateFields:
+          selected.id === "sertifikat" ? certificateFields : undefined,
+        columns: selected.id === "laporan" ? reportColumns : undefined,
+        background: usesOverlay() ? certificateBackground : undefined,
         filenameField: $("filename-field").value || undefined,
       };
       const response = await request("/generate/batch", {
@@ -498,6 +619,8 @@ $("document-form").addEventListener("submit", async (event) => {
         body: JSON.stringify(body),
       });
       const blob = await response.blob();
+      $("preview-body").innerHTML =
+        '<div class="preview-empty"><img class="empty-mascot" src="/mascot.webp" alt="" width="150" height="168" /><h3>Batch selesai.</h3><p>Dokumen dan report.json sudah dikemas.<br />Unduh ZIP untuk melihat hasilnya.</p></div>';
       outputUrl = URL.createObjectURL(blob);
       $("download-link").href = outputUrl;
       $("download-link").download = "batch.zip";
@@ -517,7 +640,19 @@ $("document-form").addEventListener("submit", async (event) => {
       );
       const response = await request("/generate", {
         method: "POST",
-        body: JSON.stringify({ template: selected.id, format, data }),
+        body: JSON.stringify({
+          template: selected.id,
+          format,
+          data,
+          letterFields:
+            selected.id === "surat-resmi" && usesOverlay()
+              ? certificateFields
+              : undefined,
+          certificateFields:
+            selected.id === "sertifikat" ? certificateFields : undefined,
+          columns: selected.id === "laporan" ? reportColumns : undefined,
+          background: usesOverlay() ? certificateBackground : undefined,
+        }),
       });
       showOutput(await response.blob(), format);
       setBusy(false);
@@ -531,6 +666,7 @@ async function connect() {
   try {
     await loadTemplates();
     setConnection(true);
+    if (window.location.hash === "#batch") setMode("batch");
     showNotice("");
   } catch (error) {
     setConnection(false);
@@ -538,10 +674,9 @@ async function connect() {
   }
   setBusy(false);
 }
-$("connection-button").onclick = connect;
 $("connection-pill").onclick = connect;
 $("nav-single").onclick = $("mode-single").onclick = () => setMode("single");
-$("nav-batch").onclick = $("mode-batch").onclick = () => setMode("batch");
+$("mode-batch").onclick = () => setMode("batch");
 $("sample-button").onclick = () => {
   if (selected) {
     populate(selected.sampleData);
@@ -586,6 +721,669 @@ $("json-file").addEventListener("change", async () => {
     $("json-file").value = "";
   }
 });
+$("letter-custom-mode").onchange = () => {
+  if (selected?.id !== "surat-resmi") return;
+  const data = Object.fromEntries(
+    [...fieldReaders].map(([name, read]) => [name, read()]),
+  );
+  const batch = $("batch-data").value;
+  selected.schema = structuredClone(originalLetterSchema);
+  if (usesOverlay()) syncCertificateSchema();
+  $("certificate-background").hidden = !usesOverlay();
+  $("open-layout-editor").hidden = !["sertifikat", "surat-resmi"].includes(
+    selected.id,
+  );
+  $("document-settings").hidden = selected.id !== "laporan";
+  populate(data);
+  $("batch-data").value = batch;
+  updateBatchCount();
+  resetOutput();
+  setBusy(false);
+};
+function fitLayoutCanvas() {
+  if (!$("layout-dialog").open) return;
+  const viewport = $("layout-canvas-viewport").getBoundingClientRect();
+  const ratio = selected?.id === "surat-resmi" ? 595 / 842 : 842 / 595;
+  const width = Math.max(
+    0,
+    Math.min(viewport.width - 40, (viewport.height - 40) * ratio),
+  );
+  $("certificate-layout").style.width = `${width}px`;
+  $("certificate-layout").style.height = `${width / ratio}px`;
+}
+new ResizeObserver(fitLayoutCanvas).observe($("layout-canvas-viewport"));
+$("open-layout-editor").onclick = async () => {
+  if (busy || !["sertifikat", "surat-resmi"].includes(selected?.id)) return;
+  if (selected.id === "surat-resmi" && !usesOverlay()) {
+    $("letter-custom-mode").checked = true;
+    $("letter-custom-mode").onchange();
+  }
+  $("layout-dialog").showModal();
+  document.body.classList.add("layout-editor-open");
+  renderCertificateFields();
+  if (selected.id === "sertifikat" && !defaultBackgroundPreview) {
+    try {
+      const bytes = await (
+        await request("/certificate-background.pdf")
+      ).arrayBuffer();
+      defaultBackgroundPreview = await pdfBackgroundToImage(bytes);
+      if (
+        $("layout-dialog").open &&
+        selected.id === "sertifikat" &&
+        !certificateBackground
+      )
+        renderCertificateFields();
+    } catch {
+      /* The position editor remains usable if the default preview cannot load. */
+    }
+  }
+};
+$("background-file-label").tabIndex = 0;
+$("background-file-label").setAttribute("role", "button");
+$("background-file").tabIndex = -1;
+$("background-file-label").onkeydown = (event) => {
+  if (!busy && ["Enter", " "].includes(event.key)) {
+    event.preventDefault();
+    $("background-file").click();
+  }
+};
+$("close-layout-editor").onclick = () => $("layout-dialog").close();
+$("layout-dialog").addEventListener("cancel", (event) => {
+  if (busy) event.preventDefault();
+});
+$("layout-dialog").addEventListener("close", () =>
+  document.body.classList.remove("layout-editor-open"),
+);
+function syncCertificateSchema() {
+  selected.schema.fields = Object.fromEntries(
+    certificateFields.map((f) => [
+      f.key,
+      { type: f.type, required: f.required, label: f.label },
+    ]),
+  );
+}
+function applyCertificateFields() {
+  if (!usesOverlay()) return;
+  const data = Object.fromEntries(
+    [...fieldReaders].map(([name, read]) => [name, read()]),
+  );
+  const batch = $("batch-data").value;
+  syncCertificateSchema();
+  populate(data);
+  $("batch-data").value = batch;
+  updateBatchCount();
+  resetOutput();
+  renderCertificateFields();
+}
+function renderCertificateFields() {
+  if (!certificateFields.some((f) => f.key === activeCertificateKey))
+    activeCertificateKey = certificateFields[0]?.key;
+  const stage = $("certificate-layout");
+  stage.replaceChildren();
+  if (
+    certificateBackground ||
+    (selected?.id === "sertifikat" && defaultBackgroundPreview)
+  ) {
+    const image = element("img");
+    image.src = certificateBackground || defaultBackgroundPreview;
+    image.style.objectPosition =
+      selected?.id === "surat-resmi" ? "top" : "center";
+    image.alt = "Background dan peta posisi";
+    stage.append(image);
+  } else
+    stage.append(
+      element(
+        "span",
+        "layout-note",
+        "Peta A4 · Unggah background untuk mengatur posisi pada desainmu",
+      ),
+    );
+  certificateFields.forEach((field, index) => {
+    const box = element("button", "certificate-field-box", field.label);
+    const resizeHandle = element("span", "layout-resize-handle");
+    resizeHandle.setAttribute("aria-hidden", "true");
+    box.append(resizeHandle);
+    box.type = "button";
+    box.classList.toggle("is-selected", field.key === activeCertificateKey);
+    box.setAttribute(
+      "aria-pressed",
+      String(field.key === activeCertificateKey),
+    );
+    box.setAttribute("aria-label", `Geser field ${field.label}`);
+    box.onclick = () => {
+      activeCertificateKey = field.key;
+      renderCertificateInspector();
+      updateLayoutSelection();
+    };
+    function positionBox() {
+      box.style.cssText = `left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;color:${field.color};`;
+    }
+    positionBox();
+    box.onpointerdown = (event) => {
+      if (busy || event.button !== 0) return;
+      event.preventDefault();
+      activeCertificateKey = field.key;
+      renderCertificateInspector();
+      updateLayoutSelection();
+      box.setPointerCapture(event.pointerId);
+      const rect = stage.getBoundingClientRect(),
+        startX = event.clientX,
+        startY = event.clientY,
+        x = field.x,
+        y = field.y,
+        width = field.width,
+        height = field.height,
+        resizing = event.target === resizeHandle;
+      box.onpointermove = (move) => {
+        if (resizing) {
+          field.width = Math.max(
+            0.5,
+            Math.min(
+              100 - x,
+              width + ((move.clientX - startX) / rect.width) * 100,
+            ),
+          );
+          field.height = Math.max(
+            0.5,
+            Math.min(
+              100 - y,
+              height + ((move.clientY - startY) / rect.height) * 100,
+            ),
+          );
+          positionBox();
+          return;
+        }
+        field.x = Math.max(
+          0,
+          Math.min(
+            100 - field.width,
+            x + ((move.clientX - startX) / rect.width) * 100,
+          ),
+        );
+        field.y = Math.max(
+          0,
+          Math.min(
+            100 - field.height,
+            y + ((move.clientY - startY) / rect.height) * 100,
+          ),
+        );
+        positionBox();
+      };
+      const finish = () => {
+        box.onpointermove = null;
+        box.onpointerup = null;
+        box.onpointercancel = null;
+        applyCertificateFields();
+      };
+      box.onpointerup = finish;
+      box.onpointercancel = finish;
+    };
+    box.onkeydown = (event) => {
+      const directions = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+      };
+      const direction = directions[event.key];
+      if (!direction) return;
+      activeCertificateKey = field.key;
+      event.preventDefault();
+      if (event.shiftKey) {
+        field.width = Math.max(
+          0.5,
+          Math.min(100 - field.x, field.width + direction[0]),
+        );
+        field.height = Math.max(
+          0.5,
+          Math.min(100 - field.y, field.height + direction[1]),
+        );
+        applyCertificateFields();
+        stage.querySelectorAll("button")[index]?.focus();
+        return;
+      }
+      field.x = Math.max(
+        0,
+        Math.min(100 - field.width, field.x + direction[0]),
+      );
+      field.y = Math.max(
+        0,
+        Math.min(100 - field.height, field.y + direction[1]),
+      );
+      applyCertificateFields();
+      stage.querySelectorAll("button")[index]?.focus();
+    };
+    stage.append(box);
+  });
+  renderCertificateInspector();
+  fitLayoutCanvas();
+}
+function updateLayoutSelection() {
+  $("certificate-layout")
+    .querySelectorAll("button")
+    .forEach((box, index) => {
+      const selected = certificateFields[index].key === activeCertificateKey;
+      box.classList.toggle("is-selected", selected);
+      box.setAttribute("aria-pressed", String(selected));
+    });
+}
+function renderCertificateInspector() {
+  const picker = $("certificate-field-tabs");
+  picker.replaceChildren();
+  certificateFields.forEach((field) => {
+    const button = element("button", "layout-field-tab", field.label);
+    button.type = "button";
+    button.classList.toggle("selected", field.key === activeCertificateKey);
+    button.setAttribute("aria-label", `Pilih field ${field.label}`);
+    button.setAttribute(
+      "aria-pressed",
+      String(field.key === activeCertificateKey),
+    );
+    button.onclick = () => {
+      activeCertificateKey = field.key;
+      renderCertificateInspector();
+      updateLayoutSelection();
+    };
+    picker.append(button);
+  });
+  const list = $("certificate-field-list");
+  list.replaceChildren();
+  certificateFields.forEach((field, index) => {
+    if (field.key !== activeCertificateKey) return;
+    const card = element("div", "certificate-field-card");
+    function control(label, input) {
+      const wrap = element("label", "certificate-control", label);
+      wrap.append(input);
+      card.append(wrap);
+      return input;
+    }
+    const label = element("input");
+    label.value = field.label;
+    label.maxLength = 80;
+    label.setAttribute("aria-label", `Judul field ${index + 1}`);
+    label.onchange = () => {
+      if (!label.value.trim()) {
+        label.value = field.label;
+        return;
+      }
+      field.label = label.value.trim();
+      applyCertificateFields();
+    };
+    control("Judul field", label);
+    const type = element("select");
+    type.setAttribute("aria-label", `Tipe field ${index + 1}`);
+    for (const [value, text] of [
+      ["string", "Teks"],
+      ["number", "Angka"],
+      ["date", "Tanggal"],
+    ]) {
+      const option = element("option", "", text);
+      option.value = value;
+      type.append(option);
+    }
+    type.value = field.type;
+    type.onchange = () => {
+      field.type = type.value;
+      applyCertificateFields();
+    };
+    control("Tipe data", type);
+    for (const [key, title, min, max] of [
+      ["x", "Kiri (%)", 0, 100 - field.width],
+      ["y", "Atas (%)", 0, 100 - field.height],
+      ["width", "Lebar (%)", 0.5, 100 - field.x],
+      ["height", "Tinggi (%)", 0.5, 100 - field.y],
+      ["fontSize", "Ukuran font (pt)", 6, 100],
+    ]) {
+      const input = element("input");
+      input.type = "number";
+      input.min = min;
+      input.max = max;
+      input.step = "any";
+      input.value = Number(field[key].toFixed(2));
+      input.setAttribute("aria-label", `${title} field ${index + 1}`);
+      input.onchange = () => {
+        const value = Number(input.value);
+        if (input.value === "" || !Number.isFinite(value)) {
+          input.value = field[key];
+          return;
+        }
+        field[key] = Math.max(min, Math.min(max, value));
+        applyCertificateFields();
+      };
+      control(title, input);
+    }
+    const color = element("input");
+    color.type = "color";
+    color.value = field.color;
+    color.setAttribute("aria-label", `Warna field ${index + 1}`);
+    color.onchange = () => {
+      field.color = color.value;
+      applyCertificateFields();
+    };
+    control("Warna", color);
+    const align = element("select");
+    align.setAttribute("aria-label", `Perataan field ${index + 1}`);
+    for (const [value, text] of [
+      ["left", "Kiri"],
+      ["center", "Tengah"],
+      ["right", "Kanan"],
+    ]) {
+      const option = element("option", "", text);
+      option.value = value;
+      align.append(option);
+    }
+    align.value = field.align;
+    align.onchange = () => {
+      field.align = align.value;
+      applyCertificateFields();
+    };
+    control("Perataan", align);
+    const required = element("input");
+    required.type = "checkbox";
+    required.checked = field.required;
+    required.setAttribute("aria-label", `Wajib field ${index + 1}`);
+    required.onchange = () => {
+      field.required = required.checked;
+      applyCertificateFields();
+    };
+    control("Wajib diisi", required);
+    const remove = element("button", "subtle-button", "Hapus field");
+    remove.type = "button";
+    remove.disabled = certificateFields.length === 1;
+    remove.setAttribute("aria-label", `Hapus field ${index + 1}`);
+    remove.onclick = () => {
+      certificateFields.splice(index, 1);
+      applyCertificateFields();
+    };
+    card.append(
+      remove,
+      element("small", "column-key", `Key JSON: ${field.key}`),
+    );
+    list.append(card);
+  });
+  $("add-certificate-field").disabled = certificateFields.length >= 20 || busy;
+}
+$("add-certificate-field").onclick = () => {
+  if (certificateFields.length >= 20) return;
+  let number = 1;
+  while (certificateFields.some((f) => f.key === `field${number}`)) number++;
+  certificateFields.push({
+    key: `field${number}`,
+    label: `Field ${number}`,
+    type: "string",
+    required: false,
+    x: 20,
+    y: 50,
+    width: 60,
+    height: 8,
+    fontSize: 18,
+    color: "#172b4d",
+    align: "center",
+  });
+  activeCertificateKey = `field${number}`;
+  applyCertificateFields();
+};
+$("reset-certificate-fields").onclick = () => {
+  certificateFields = structuredClone(defaultCertificateFields);
+  applyCertificateFields();
+};
+function syncReportSchema() {
+  selected.schema.fields.items.items.fields = Object.fromEntries(
+    reportColumns.map((c) => [
+      c.key,
+      { type: c.type, required: c.required, label: c.label },
+    ]),
+  );
+}
+function applyReportColumns() {
+  if (selected?.id !== "laporan") return;
+  const data = Object.fromEntries(
+    [...fieldReaders].map(([name, read]) => [name, read()]),
+  );
+  const batch = $("batch-data").value;
+  syncReportSchema();
+  populate(data);
+  $("batch-data").value = batch;
+  updateBatchCount();
+  resetOutput();
+  renderReportColumns();
+}
+function renderReportColumns() {
+  const list = $("report-column-list");
+  list.replaceChildren();
+  reportColumns.forEach((column, index) => {
+    const row = element("div", "report-column-row");
+    const name = element("input");
+    name.value = column.label;
+    name.maxLength = 80;
+    name.setAttribute("aria-label", `Judul kolom ${index + 1}`);
+    name.onchange = () => {
+      if (!name.value.trim()) {
+        name.value = column.label;
+        return;
+      }
+      column.label = name.value.trim();
+      applyReportColumns();
+    };
+    const type = element("select");
+    type.setAttribute("aria-label", `Tipe kolom ${index + 1}`);
+    for (const [value, label] of [
+      ["string", "Teks"],
+      ["number", "Angka"],
+      ["date", "Tanggal"],
+    ]) {
+      const option = element("option", "", label);
+      option.value = value;
+      type.append(option);
+    }
+    type.value = column.type;
+    type.onchange = () => {
+      column.type = type.value;
+      applyReportColumns();
+    };
+    const requiredLabel = element("label", "column-required");
+    const required = element("input");
+    required.type = "checkbox";
+    required.checked = column.required;
+    required.setAttribute("aria-label", `Wajib kolom ${index + 1}`);
+    required.onchange = () => {
+      column.required = required.checked;
+      applyReportColumns();
+    };
+    requiredLabel.append(required, document.createTextNode("Wajib"));
+    const up = element("button", "subtle-button", "↑");
+    up.type = "button";
+    up.setAttribute("aria-label", `Naikkan kolom ${index + 1}`);
+    up.disabled = index === 0 || busy;
+    up.onclick = () => {
+      [reportColumns[index - 1], reportColumns[index]] = [
+        column,
+        reportColumns[index - 1],
+      ];
+      applyReportColumns();
+    };
+    const remove = element("button", "subtle-button", "×");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Hapus kolom ${index + 1}`);
+    remove.disabled = reportColumns.length === 1 || busy;
+    remove.onclick = () => {
+      reportColumns.splice(index, 1);
+      applyReportColumns();
+    };
+    row.append(
+      name,
+      type,
+      requiredLabel,
+      up,
+      remove,
+      element("small", "column-key", `Key JSON: ${column.key}`),
+    );
+    list.append(row);
+  });
+  $("add-report-column").disabled = busy || reportColumns.length >= 12;
+}
+$("add-report-column").onclick = () => {
+  if (reportColumns.length >= 12) return;
+  let number = 1;
+  while (reportColumns.some((c) => c.key === `kolom${number}`)) number++;
+  reportColumns.push({
+    key: `kolom${number}`,
+    label: `Kolom ${number}`,
+    type: "string",
+    required: false,
+  });
+  applyReportColumns();
+};
+$("reset-report-columns").onclick = () => {
+  reportColumns = structuredClone(defaultReportColumns);
+  applyReportColumns();
+};
+const guideSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1684" height="1190" viewBox="0 0 842 595"><rect width="842" height="595" fill="#fff"/><rect x="12" y="12" width="818" height="571" fill="none" stroke="#82966a"/><g font-family="sans-serif" fill="#193f32"><text x="421" y="100" font-size="26" text-anchor="middle">PANDUAN BACKGROUND SERTIFIKAT</text><text x="421" y="135" font-size="14" text-anchor="middle">A4 landscape · Hapus kotak panduan pada desain akhir</text></g>${[
+  [101.04, 255.85, 639.92, 71.4, "NAMA"],
+  [126.3, 374.85, 589.4, 59.5, "KEGIATAN"],
+  [252.6, 446.25, 336.8, 35.7, "TANGGAL"],
+  [45, 535, 300, 25, "NOMOR"],
+]
+  .map(
+    ([x, y, w, h, label]) =>
+      `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#edf2e6" stroke="#193f32" stroke-dasharray="5 3"/><text x="${x + w / 2}" y="${y + h / 2 + 4}" font-family="sans-serif" font-size="12" fill="#193f32" text-anchor="middle">${label}</text>`,
+  )
+  .join("")}</svg>`;
+$("certificate-guide").innerHTML = guideSvg;
+$("download-guide").onclick = () => {
+  const url = URL.createObjectURL(
+    new Blob([guideSvg], { type: "image/svg+xml" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "panduan-background-sertifikat.svg";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+async function pdfBackgroundToImage(bytes) {
+  const pdfjs = await import("/pdf-vendor/pdf.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf-vendor/pdf.worker.mjs";
+  const task = pdfjs.getDocument({
+    data: new Uint8Array(bytes),
+    isEvalSupported: false,
+  });
+  let protectedPdf = false;
+  task.onPassword = () => {
+    protectedPdf = true;
+    void task.destroy();
+  };
+  try {
+    const pdf = await task.promise;
+    if (pdf.numPages !== 1)
+      throw new Error(
+        "Gunakan PDF satu halaman. Mode custom surat belum mendukung template beberapa halaman.",
+      );
+    const page = await pdf.getPage(1),
+      base = page.getViewport({ scale: 1 });
+    if (
+      base.width <= 0 ||
+      base.height <= 0 ||
+      base.width > 5000 ||
+      base.height > 5000
+    )
+      throw new Error("Ukuran halaman PDF tidak didukung.");
+    const viewport = page.getViewport({
+      scale: Math.min(2, Math.sqrt(4000000 / (base.width * base.height))),
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport })
+      .promise;
+    const value = canvas.toDataURL("image/jpeg", 0.95);
+    canvas.width = canvas.height = 0;
+    return value;
+  } catch (error) {
+    if (protectedPdf)
+      throw new Error("Buka proteksi kata sandi PDF terlebih dahulu.");
+    throw error;
+  } finally {
+    await task.destroy().catch(() => {});
+  }
+}
+$("background-file").onchange = async () => {
+  const file = $("background-file").files[0];
+  if (!file || busy) return;
+  setBusy(true);
+  resetOutput();
+  $("background-error").hidden = true;
+  try {
+    if (
+      ![
+        "image/png",
+        "image/jpeg",
+        ...(selected.id === "surat-resmi" ? ["application/pdf"] : []),
+      ].includes(file.type) ||
+      file.size > 5 * 1024 * 1024
+    )
+      throw new Error("Pilih format yang didukung, maksimal 5 MB.");
+    let value = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Gambar belum dapat dibaca."));
+      reader.readAsDataURL(file);
+    });
+    if (file.type === "application/pdf") {
+      value = await pdfBackgroundToImage(await file.arrayBuffer());
+    }
+    const image = new Image();
+    image.src = value;
+    await image.decode().catch(() => {
+      throw new Error(
+        "Gambar tidak dapat dibaca. Pilih file PNG/JPG yang valid.",
+      );
+    });
+    if (image.naturalWidth * image.naturalHeight > 16000000)
+      throw new Error(
+        "Gambar maksimal 16 megapiksel. Kecilkan resolusi gambar lalu pilih ulang.",
+      );
+    backgroundError = false;
+    certificateBackground = value;
+    renderCertificateFields();
+    $("background-preview").src = value;
+    $("background-preview").hidden = false;
+    $("background-name").textContent = file.name;
+    $("reset-background").hidden = false;
+    resetOutput();
+    showNotice(
+      "Background siap. Gambar dipasang utuh ke A4; ruang putih ditambahkan jika rasionya berbeda. Klik Buat dokumen untuk menerapkannya.",
+      true,
+    );
+  } catch (error) {
+    backgroundError = true;
+    $("background-error").textContent =
+      error.message || "Gambar tidak dapat dibaca. Pilih PNG/JPG yang valid.";
+    $("background-error").hidden = false;
+    $("background-name").textContent = "Gambar belum diterapkan";
+    $("reset-background").hidden = false;
+    $("background-preview").hidden = true;
+    $("background-file").value = "";
+  } finally {
+    setBusy(false);
+  }
+};
+$("reset-background").onclick = () => {
+  certificateBackground = undefined;
+  renderCertificateFields();
+  backgroundError = false;
+  $("background-error").hidden = true;
+  $("background-file").value = "";
+  $("background-preview").removeAttribute("src");
+  $("background-preview").hidden = true;
+  $("background-name").textContent =
+    selected.id === "surat-resmi"
+      ? "Halaman putih tanpa kop"
+      : "Menggunakan desain bawaan";
+  $("reset-background").hidden = true;
+  resetOutput();
+  showNotice("");
+  setBusy(false);
+};
 window.addEventListener("beforeunload", () => {
   if (outputUrl) URL.revokeObjectURL(outputUrl);
 });

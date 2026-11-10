@@ -1,3 +1,13 @@
+import { defaultLetterFields } from "./letter.js";
+import {
+  certificateFieldsSchema,
+  type CertificateField,
+} from "./certificate.js";
+import {
+  reportColumnsSchema,
+  defaultReportColumns,
+  type ReportColumn,
+} from "./report.js";
 import { chromium, type Browser } from "playwright";
 import Handlebars from "handlebars";
 import { readFile } from "node:fs/promises";
@@ -46,15 +56,105 @@ export class Renderer {
     this.browser = undefined;
     if (browser) await (await browser).close();
   }
-  async generate(id: string, format: "pdf" | "png", data: unknown) {
+  async generate(
+    id: string,
+    format: "pdf" | "png",
+    data: unknown,
+    background?: string,
+    columns?: ReportColumn[],
+    certificateFields?: CertificateField[],
+    letterFields?: CertificateField[],
+  ) {
     const t = await this.templates.load(id);
+    if (columns && id !== "laporan")
+      throw new ApiError(422, "Kolom khusus hanya untuk laporan");
+    const reportColumns =
+      id === "laporan"
+        ? reportColumnsSchema.parse(columns ?? defaultReportColumns)
+        : undefined;
+    if (reportColumns) {
+      t.schema = {
+        ...t.schema,
+        fields: {
+          ...t.schema.fields,
+          items: {
+            type: "array",
+            required: true,
+            items: {
+              fields: Object.fromEntries(
+                reportColumns.map((c) => [
+                  c.key,
+                  { type: c.type, required: c.required },
+                ]),
+              ),
+            },
+          },
+        },
+      };
+    }
+    if (letterFields && id !== "surat-resmi")
+      throw new ApiError(422, "Field surat hanya untuk surat resmi");
+    const letterOverlay =
+      id === "surat-resmi" && (!!letterFields || !!background);
+    if (letterOverlay)
+      letterFields = certificateFieldsSchema.parse(
+        letterFields ?? defaultLetterFields,
+      );
+    if (letterFields)
+      t.schema = {
+        fields: Object.fromEntries(
+          letterFields.map((f) => [
+            f.key,
+            { type: f.type, required: f.required },
+          ]),
+        ),
+      };
+    if (certificateFields) {
+      if (id !== "sertifikat")
+        throw new ApiError(422, "Field khusus hanya untuk sertifikat");
+      certificateFields = certificateFieldsSchema.parse(certificateFields);
+      t.schema = {
+        fields: Object.fromEntries(
+          certificateFields.map((f) => [
+            f.key,
+            { type: f.type, required: f.required },
+          ]),
+        ),
+      };
+    }
     const valid = validateData(t.schema, data);
+    const renderData = reportColumns
+      ? {
+          ...valid,
+          columns: reportColumns,
+          rows: valid.items.map((row: Record<string, unknown>) =>
+            reportColumns.map((c) => ({
+              value:
+                row[c.key] === undefined || row[c.key] === ""
+                  ? "—"
+                  : row[c.key],
+            })),
+          ),
+        }
+      : valid;
+    if (background && !["sertifikat", "surat-resmi"].includes(id))
+      throw new ApiError(
+        422,
+        "Background khusus hanya untuk sertifikat atau surat",
+      );
     return this.limiter.run(async () => {
-      if (t.config.type === "overlay") {
+      if (t.config.type === "overlay" || letterOverlay) {
         const { renderOverlay } = await import("./overlay.js");
-        return renderOverlay(t, format, valid, this);
+        return renderOverlay(
+          t,
+          format,
+          valid,
+          this,
+          background,
+          letterOverlay ? letterFields : certificateFields,
+        );
       }
-      return this.html(t, format, valid);
+      return this.html(t, format, renderData);
     });
   }
   async html(t: Template, format: "pdf" | "png", data: unknown) {

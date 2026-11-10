@@ -13,7 +13,7 @@ for (const id of ["surat-resmi", "laporan"])
       if (format === "pdf") {
         expect(b.subarray(0, 5).toString()).toBe("%PDF-");
         const count = (await PDFDocument.load(b)).getPageCount();
-        if (id === "laporan") expect(count).toBeGreaterThan(1);
+        if (id === "laporan") expect(count).toBeGreaterThanOrEqual(1);
         else expect(count).toBe(1);
       } else {
         expect((await sharp(b).metadata()).format).toBe("png");

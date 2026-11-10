@@ -1,12 +1,22 @@
+import { defaultLetterFields } from "./letter.js";
+import {
+  certificateFieldsSchema,
+  defaultCertificateFields,
+} from "./certificate.js";
+import { reportColumnsSchema } from "./report.js";
 import Fastify from "fastify";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { ApiError } from "./templates.js";
 import { Renderer, Limiter } from "./render.js";
-import { processBatch, batchSchema } from "./batch.js";
+import { processBatch, batchSchema, backgroundSchema } from "./batch.js";
 export const requestSchema = z.object({
   template: z.string().regex(/^[\w-]+$/),
   format: z.enum(["pdf", "png"]),
+  background: backgroundSchema,
+  columns: reportColumnsSchema.optional(),
+  certificateFields: certificateFieldsSchema.optional(),
+  letterFields: certificateFieldsSchema.optional(),
   data: z.record(z.string(), z.unknown()),
 });
 export async function createApp(
@@ -88,11 +98,22 @@ export async function createApp(
       schema: t.schema,
       sampleData: t.sample,
       config: t.config,
+      letterFields: t.id === "surat-resmi" ? defaultLetterFields : undefined,
+      certificateFields:
+        t.id === "sertifikat" ? defaultCertificateFields : undefined,
     };
   });
-  app.post("/generate", async (req, reply) => {
+  app.post("/generate", { bodyLimit: 8 * 1024 * 1024 }, async (req, reply) => {
     const b = requestSchema.parse(req.body);
-    const result = await renderer.generate(b.template, b.format, b.data);
+    const result = await renderer.generate(
+      b.template,
+      b.format,
+      b.data,
+      b.background,
+      b.columns,
+      b.certificateFields,
+      b.letterFields,
+    );
     return reply
       .type(b.format === "pdf" ? "application/pdf" : "image/png")
       .header(
@@ -101,22 +122,34 @@ export async function createApp(
       )
       .send(result);
   });
-  app.post("/generate/batch", async (req, reply) => {
-    const input = batchSchema(limits.batch).parse(req.body);
-    const bytes = await batchLimiter.run(() => processBatch(input, renderer));
-    return reply
-      .type("application/zip")
-      .header("Content-Disposition", 'attachment; filename="batch.zip"')
-      .send(bytes);
-  });
+  app.post(
+    "/generate/batch",
+    { bodyLimit: 8 * 1024 * 1024 },
+    async (req, reply) => {
+      const input = batchSchema(limits.batch).parse(req.body);
+      const bytes = await batchLimiter.run(() => processBatch(input, renderer));
+      return reply
+        .type("application/zip")
+        .header("Content-Disposition", 'attachment; filename="batch.zip"')
+        .send(bytes);
+    },
+  );
   for (const [url, file, type] of [
     ["/", "public/index.html", "text/html; charset=utf-8"],
+    ["/logo-mark.svg", "public/assets/logo-mark.svg", "image/svg+xml"],
+    [
+      "/certificate-background.pdf",
+      "templates/sertifikat/background.pdf",
+      "application/pdf",
+    ],
+    ["/mascot.webp", "public/assets/mascot.webp", "image/webp"],
     ["/ui.css", "public/ui.css", "text/css"],
     ["/ui.js", "public/ui.js", "text/javascript"],
     ["/ui-font.ttf", "fonts/NotoSans-Regular.ttf", "font/ttf"],
     ["/converter", "public/converter.html", "text/html; charset=utf-8"],
     ["/converter.css", "public/converter.css", "text/css"],
     ["/converter.js", "public/converter.js", "text/javascript"],
+    ["/template-guide.js", "public/template-guide.js", "text/javascript"],
     ["/template-export.js", "public/template-export.js", "text/javascript"],
     [
       "/converter-vendor/fflate.js",
@@ -128,14 +161,8 @@ export async function createApp(
       reply.type(type).send(await readFile(file)),
     );
   }
-  app.get("/editor", async (_req, reply) =>
-    reply.type("text/html").send(await readFile("public/editor.html")),
-  );
-  app.get("/editor.js", async (_req, reply) =>
-    reply.type("text/javascript").send(await readFile("public/editor.js")),
-  );
   for (const name of ["pdf.mjs", "pdf.worker.mjs"])
-    app.get(`/editor-vendor/${name}`, async (_req, reply) =>
+    app.get(`/pdf-vendor/${name}`, async (_req, reply) =>
       reply
         .type("text/javascript")
         .send(await readFile(`node_modules/pdfjs-dist/build/${name}`)),
