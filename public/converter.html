@@ -4,67 +4,58 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>PDF ke template kode · DocForge</title>
+    <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
     <link rel="stylesheet" href="/ui.css" />
     <link rel="stylesheet" href="/converter.css" />
     <script type="module" src="/converter.js"></script>
   </head>
   <body class="converter-body">
     <div class="app-shell">
-      <aside class="sidebar">
+      <header class="sidebar">
         <a class="brand" href="/" aria-label="DocForge beranda"
-          ><span class="brand-icon">d<span>f</span><i></i></span
-          ><span>docforge<span class="brand-dot">.</span></span></a
+          ><img
+            class="brand-mark"
+            src="/logo-mark.svg"
+            alt=""
+            width="38"
+            height="32"
+          /><span class="brand-wordmark">doc<strong>forge</strong></span></a
         >
-        <div class="workspace-label">WORKSPACE</div>
         <nav aria-label="Navigasi utama">
-          <a class="nav-item" href="/" aria-label="Buat dokumen"
-            ><span aria-hidden="true">▤</span> Buat dokumen
-            <span class="nav-arrow">↗</span></a
-          >
-          <a
-            class="nav-item active"
-            href="/converter"
-            aria-current="page"
-            aria-label="PDF ke kode"
-            ><span aria-hidden="true">⌘</span> PDF ke kode
-            <span class="nav-arrow">↗</span></a
+          <a class="nav-item" href="/">Buat dokumen</a>
+          <a class="nav-item active" href="/converter" aria-current="page"
+            >PDF ke kode</a
           >
         </nav>
-        <div class="sidebar-note">
-          <span class="note-icon">✦</span
-          ><strong>Satu template.<br />Banyak kemungkinan.</strong>
-          <p>
-            Dari sertifikat hingga laporan, biarkan DocForge mengurus
-            tampilannya.
-          </p>
-          <span class="note-line"></span>
-        </div>
-        <div class="sidebar-bottom">
-          <span class="avatar">DF</span>
-          <div>
-            <strong>DocForge publik</strong
-            ><small>File diproses di browser</small>
-          </div>
-        </div>
-      </aside>
+        <span class="nav-caption">Tanpa akun. Tanpa arsip.</span>
+      </header>
       <div class="main-shell">
-        <header class="topbar">
+        <div class="topbar">
           <div class="breadcrumb">
             Workspace <span>/</span><strong>PDF ke kode</strong>
           </div>
-        </header>
+        </div>
         <main class="converter-main">
           <div class="page-heading converter-intro">
-            <div>
-              <p class="eyebrow"><span></span> DARI PDF KE KODE APLIKASI</p>
-              <h1>Desain sudah ada.<br /><span>Jadikan template.</span></h1>
+            <div class="heading-copy">
+              <h1>PDF-mu, jadi template.</h1>
               <p class="heading-description">
-                Unggah PDF, petakan teks ke variabel, lalu unduh kode
-                TypeScript.<br />File diproses lokal di browser tanpa dikirim ke
-                server.
+                Pilih teks yang ingin dijadikan variabel, lalu ekspor
+                kodenya.<br />PDF dibaca lokal di browser.
               </p>
             </div>
-            <span class="intro-symbol" aria-hidden="true">{ }</span>
+            <div class="mascot-intro">
+              <img
+                src="/mascot.webp"
+                alt="Maskot kucing DocForge"
+                width="180"
+                height="190"
+              />
+              <div>
+                <span class="mascot-caption">Dari desain yang sudah ada.</span>
+                <p>Tinggal sambungkan<br />ke datamu.</p>
+              </div>
+            </div>
           </div>
           <div class="notice" id="converter-status" role="status">
             Teks PDF akan diekstrak berdasarkan posisi. Tabel berulang dan
@@ -74,14 +65,12 @@
           <section class="panel upload-panel" aria-labelledby="upload-heading">
             <div class="panel-heading">
               <div>
-                <span class="step-number">01</span>
                 <h2 id="upload-heading">Siapkan dokumen</h2>
               </div>
               <span class="section-hint">PDF · Maksimal 15 MB</span>
             </div>
             <div class="upload-controls">
-              <label class="upload-label" for="pdf-file"
-                ><span>↥</span>
+              <label class="upload-label" for="pdf-file">
                 <div>
                   <strong>Pilih atau letakkan PDF di sini</strong
                   ><small>PDF maksimal 15 MB · hingga 20 halaman</small>
@@ -102,7 +91,6 @@
             <section class="panel source-panel">
               <div class="panel-heading">
                 <div>
-                  <span class="step-number">02</span>
                   <h2>Pilih teks pada PDF</h2>
                 </div>
                 <div class="page-switch">
@@ -125,7 +113,13 @@
               <div class="source-scroll">
                 <div id="pdf-stage">
                   <div class="source-empty">
-                    <span>▤</span>
+                    <img
+                      class="empty-mascot"
+                      src="/mascot.webp"
+                      alt=""
+                      width="110"
+                      height="124"
+                    />
                     <h3>Mulai dari PDF milikmu</h3>
                     <p>
                       Setelah file dibaca, klik teks untuk<br />menghubungkannya
@@ -135,13 +129,12 @@
                 </div>
               </div>
               <p class="source-footer" id="source-details">
-                Teks yang dipilih akan ditandai hijau.
+                Teks yang dipilih akan ditandai pada PDF.
               </p>
             </section>
             <section class="panel mapping-panel">
               <div class="panel-heading">
                 <div>
-                  <span class="step-number">03</span>
                   <h2>Hubungkan ke data</h2>
                 </div>
                 <span id="binding-count" class="preview-tag">0 VARIABEL</span>
@@ -161,14 +154,13 @@
           <section class="panel export-panel">
             <div class="panel-heading">
               <div>
-                <span class="step-number">04</span>
                 <h2>Pratinjau & ekspor</h2>
               </div>
               <div class="export-actions">
                 <button id="download-ts" class="subtle-button" disabled>
-                  ↓ TypeScript</button
+                  Unduh TypeScript</button
                 ><button id="download-package" class="primary-button" disabled>
-                  ↓ Unduh paket template
+                  Unduh paket template
                 </button>
               </div>
             </div>
@@ -215,9 +207,9 @@
           </section>
           <footer class="page-footer">
             <span
-              ><span class="footer-mark">✧</span> File tetap di perangkatmu.
-              Hasil siap digunakan.</span
-            ><span>Made simple by <strong>docforge.</strong></span>
+              >File tetap di perangkatmu. Kode hasil ekspor bisa digunakan di
+              aplikasimu.</span
+            ><span>docforge.</span>
           </footer>
         </main>
       </div>

@@ -136,6 +136,8 @@ export async function createApp(
   );
   for (const [url, file, type] of [
     ["/", "public/index.html", "text/html; charset=utf-8"],
+    ["/logo-mark.svg", "public/assets/logo-mark.svg", "image/svg+xml"],
+    ["/mascot.webp", "public/assets/mascot.webp", "image/webp"],
     ["/ui.css", "public/ui.css", "text/css"],
     ["/ui.js", "public/ui.js", "text/javascript"],
     ["/ui-font.ttf", "fonts/NotoSans-Regular.ttf", "font/ttf"],

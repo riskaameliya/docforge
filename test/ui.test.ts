@@ -41,6 +41,7 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     expect(await page.locator("#api-key").count()).toBe(0);
     expect(await page.locator(".template-card").count()).toBe(3);
     expect(await page.locator("#field-nama").inputValue()).toContain("Siti");
+    await page.locator("#document-settings > summary").click();
     await page.screenshot({
       path: "/tmp/docforge-ui-desktop.png",
       fullPage: true,

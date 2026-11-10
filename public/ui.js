@@ -20,23 +20,17 @@ const $ = (id) => document.getElementById(id);
 const metadata = {
   sertifikat: {
     title: "Sertifikat",
-    description: "Apresiasi yang berkesan",
-    badge: "OVERLAY · LANDSCAPE",
-    icon: "✧",
+    description: "Nama, kegiatan, dan desainmu.",
     style: "",
   },
   "surat-resmi": {
     title: "Surat resmi",
-    description: "Korespondensi profesional",
-    badge: "HTML · A4",
-    icon: "▤",
+    description: "Kop sendiri atau format bawaan.",
     style: "letter",
   },
   laporan: {
     title: "Laporan",
-    description: "Data tersusun, mudah dibaca",
-    badge: "HTML · TABEL",
-    icon: "▥",
+    description: "Tabel dengan kolom pilihanmu.",
     style: "report",
   },
 };
@@ -65,24 +59,22 @@ function showNotice(message, success = false) {
 function setConnection(value) {
   connected = value;
   $("connection-pill").classList.toggle("connected", value);
-  $("connection-pill").replaceChildren(
-    element("i"),
-    document.createTextNode(value ? "Terhubung" : "Belum terhubung"),
-  );
+  $("connection-pill").textContent = "Muat ulang";
   $("connection-label").textContent = value
-    ? "Terhubung · Siap digunakan"
+    ? "Siap digunakan"
     : "Belum terhubung";
 }
 function resetOutput() {
   if (outputUrl) URL.revokeObjectURL(outputUrl);
   outputUrl = null;
   $("preview-body").innerHTML = emptyPreview;
-  $("preview-tag").textContent = "BELUM ADA HASIL";
+  $("preview-tag").textContent = "Belum dibuat";
   $("preview-download").hidden = true;
   $("download-link").removeAttribute("href");
 }
 function setBusy(value) {
   busy = value;
+  document.body.classList.toggle("is-processing", value);
   $("background-file").disabled = value;
   $("letter-custom-mode").disabled = value;
   $("certificate-settings")
@@ -101,11 +93,11 @@ function setBusy(value) {
   $("upload-button").disabled = value || !selected;
   document
     .querySelectorAll(
-      ".template-card, #mode-single, #mode-batch, #nav-single, #connection-button, #connection-pill",
+      ".template-card, #mode-single, #mode-batch, #nav-single, #connection-pill",
     )
     .forEach((b) => (b.disabled = value));
   $("generate-button").replaceChildren(
-    element("span", value ? "spinner" : "", value ? "" : "✦"),
+    ...(value ? [element("span", "spinner")] : []),
     document.createTextNode(
       value
         ? "Sedang memproses…"
@@ -113,8 +105,8 @@ function setBusy(value) {
           ? "Buat semua dokumen"
           : "Buat dokumen",
     ),
-    element("span", "", value ? "" : "→"),
   );
+  $("preview-body").setAttribute("aria-busy", String(value));
 }
 async function request(url, options = {}) {
   const headers = {
@@ -153,8 +145,6 @@ async function loadTemplates() {
     const info = metadata[template.id] || {
       title: pretty(template.id),
       description: "Template dokumen",
-      badge: template.type.toUpperCase(),
-      icon: "▤",
       style: "letter",
     };
     const card = element("button", "template-card");
@@ -163,17 +153,16 @@ async function loadTemplates() {
     card.setAttribute("aria-pressed", "false");
     const mini = element("div", `template-mini ${info.style}`);
     mini.setAttribute("aria-hidden", "true");
-    mini.append(
-      element("span", "", info.icon),
-      element("i"),
-      element("i"),
-      element("i"),
-    );
+    mini.innerHTML =
+      template.id === "laporan"
+        ? '<svg viewBox="0 0 32 32" fill="none"><rect x="5" y="6" width="22" height="21" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 13h22M13 13v14M21 13v14M5 20h22" stroke="currentColor" stroke-width="1.5"/></svg>'
+        : template.id === "sertifikat"
+          ? '<svg viewBox="0 0 32 32" fill="none"><rect x="4" y="7" width="24" height="17" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10 12h12M10 16h7" stroke="currentColor" stroke-width="1.5"/><circle cx="22" cy="22" r="4" fill="currentColor"/><path d="m20 25-1 5 3-2 3 2-1-5" fill="currentColor"/></svg>'
+          : '<svg viewBox="0 0 32 32" fill="none"><path d="M8 4h11l6 6v18H8V4Z" stroke="currentColor" stroke-width="1.5"/><path d="M19 4v7h6M12 16h9M12 20h9M12 24h6" stroke="currentColor" stroke-width="1.5"/></svg>';
     const copy = element("div");
     copy.append(
       element("strong", "", info.title),
       element("p", "", info.description),
-      element("small", "", info.badge),
     );
     card.append(mini, copy, element("span", "selection-dot"));
     card.addEventListener("click", () =>
@@ -216,6 +205,12 @@ async function selectTemplate(id) {
   $("letter-options").hidden = id !== "surat-resmi";
   if (id === "surat-resmi")
     originalLetterSchema = structuredClone(template.schema);
+  $("settings-title").textContent =
+    id === "laporan"
+      ? "Atur kolom laporan"
+      : id === "surat-resmi"
+        ? "Kop surat dan posisi isi"
+        : "Background, field, dan posisi";
   $("report-columns").hidden = id !== "laporan";
   if (id === "laporan") syncReportSchema();
   if (["sertifikat", "surat-resmi"].includes(id)) {
@@ -611,6 +606,8 @@ $("document-form").addEventListener("submit", async (event) => {
         body: JSON.stringify(body),
       });
       const blob = await response.blob();
+      $("preview-body").innerHTML =
+        '<div class="preview-empty"><img class="empty-mascot" src="/mascot.webp" alt="" width="150" height="168" /><h3>Batch selesai.</h3><p>Dokumen dan report.json sudah dikemas.<br />Unduh ZIP untuk melihat hasilnya.</p></div>';
       outputUrl = URL.createObjectURL(blob);
       $("download-link").href = outputUrl;
       $("download-link").download = "batch.zip";
@@ -664,7 +661,6 @@ async function connect() {
   }
   setBusy(false);
 }
-$("connection-button").onclick = connect;
 $("connection-pill").onclick = connect;
 $("nav-single").onclick = $("mode-single").onclick = () => setMode("single");
 $("mode-batch").onclick = () => setMode("batch");

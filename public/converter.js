@@ -287,6 +287,7 @@ function renderBindings() {
 async function loadPdf(file) {
   if (processing) return;
   processing = true;
+  document.body.classList.add("is-processing");
   $("pdf-file").disabled = true;
   $("function-name").disabled = true;
   $("previous-page").disabled = true;
@@ -431,6 +432,7 @@ async function loadPdf(file) {
   } finally {
     if (task) await task.destroy().catch(() => {});
     processing = false;
+    document.body.classList.remove("is-processing");
     $("pdf-file").disabled = false;
     $("function-name").disabled = false;
     if (pages.length) {
