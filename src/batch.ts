@@ -1,3 +1,4 @@
+import { reportColumnsSchema } from "./report.js";
 import { zipSync } from "fflate";
 import { z } from "zod";
 import { ApiError } from "./templates.js";
@@ -13,6 +14,7 @@ export const batchSchema = (limit: number) =>
     format: z.enum(["pdf", "png"]),
     data: z.array(z.record(z.string(), z.unknown())).min(1).max(limit),
     background: backgroundSchema,
+    columns: reportColumnsSchema.optional(),
     filenameField: z.string().max(100).optional(),
   });
 export type BatchInput = z.infer<ReturnType<typeof batchSchema>>;
@@ -36,6 +38,8 @@ export async function processBatch(
   await renderer.templates.load(input.template);
   if (input.background && input.template !== "sertifikat")
     throw new ApiError(422, "Background khusus hanya untuk sertifikat");
+  if (input.columns && input.template !== "laporan")
+    throw new ApiError(422, "Kolom khusus hanya untuk laporan");
   const files: Record<string, Uint8Array> = {};
   const result: BatchResult = {
     total: input.data.length,
@@ -54,6 +58,7 @@ export async function processBatch(
         input.format,
         data,
         input.background,
+        input.columns,
       );
     } catch (error) {
       if (!(error instanceof ApiError) || error.statusCode !== 422) throw error;

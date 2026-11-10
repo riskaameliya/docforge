@@ -1580,3 +1580,37 @@ button.connection-pill {
     max-height: 100%;
   }
 }
+
+.report-column-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0;
+}
+.report-column-row > input {
+  flex: 1;
+  min-width: 100px;
+  width: 100px;
+}
+.report-column-row > select {
+  width: 95px;
+}
+.report-column-row > input,
+.report-column-row > select {
+  border: 1px solid #dce3d2;
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+  font-size: 13px;
+}
+.column-required {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.column-key {
+  flex-basis: 100%;
+  color: #63735c;
+}

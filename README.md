@@ -153,3 +153,17 @@ Buka **Panduan menyiapkan desain sertifikat** di form dan unduh SVG panduan. Sis
 Judul, logo, bingkai, tanda tangan, dan label tetap harus sudah ada pada gambar. Jangan sertakan data peserta atau kotak panduan dalam desain akhir. Gunakan latar terang di area teks. Posisi belum dapat digeser pada form ini; sesuaikan gambar dengan panduan dan periksa pratinjau.
 
 API `/generate` dan `/generate/batch` menerima properti opsional `background` berupa data URI `data:image/png;base64,...` atau `data:image/jpeg;base64,...`, khusus template `sertifikat`. Body generate dibatasi 8 MiB untuk mengakomodasi gambar base64. Background divalidasi dan dinormalisasi di memori tanpa penulisan disk. Pada batch satu gambar digunakan untuk semua dokumen. Template bawaan tidak berubah, dan pengguna lain tidak menerima gambar tersebut. Tombol **Gunakan desain bawaan** menghapus pilihan gambar pada tab tersebut.
+
+## Kolom laporan custom
+
+Pilih **Laporan**, lalu gunakan panel **Kolom laporan** untuk menambah, menghapus, mengganti judul atau tipe, menandai wajib, dan mengurutkan kolom dengan tombol panah. Maksimal 12 kolom; minimal satu kolom. Kolom bawaan tetap Nama, Jumlah, dan Keterangan. Tombol **Kembalikan kolom bawaan** mengembalikan susunan awal. Menghapus kolom menghilangkan nilainya dari form; mengubah tipe dapat mengosongkan nilai yang tidak cocok.
+
+Pengaturan berlaku untuk PDF/PNG serta seluruh dokumen batch di tab tersebut, tanpa disimpan ke server. Untuk impor JSON, isi `items` dengan key yang ditampilkan pada panel kolom. Judul dan tanggal laporan tetap tersedia.
+
+API `/generate` dan `/generate/batch` menerima `columns` opsional, khusus template `laporan`:
+
+```json
+[{"key":"produk","label":"Nama produk","type":"string","required":true},{"key":"harga","label":"Harga satuan","type":"number","required":true}]
+```
+
+Data baris contohnya `{"produk":"Buku","harga":12500}` di dalam `items`. Tipe yang tersedia: `string`, `number`, `date` (YYYY-MM-DD). Key harus unik, diawali huruf, dan hanya menggunakan huruf/angka/underscore (maksimal 40 karakter). Jika `columns` tidak dikirim, sistem memakai kolom bawaan. Label dan isi sel di-escape saat render.

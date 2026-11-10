@@ -1,3 +1,9 @@
+const defaultReportColumns = [
+  { key: "nama", label: "Nama", type: "string", required: true },
+  { key: "jumlah", label: "Jumlah", type: "number", required: true },
+  { key: "keterangan", label: "Keterangan", type: "string", required: false },
+];
+let reportColumns = structuredClone(defaultReportColumns);
 let certificateBackground;
 let backgroundError = false;
 const $ = (id) => document.getElementById(id);
@@ -68,6 +74,10 @@ function resetOutput() {
 function setBusy(value) {
   busy = value;
   $("background-file").disabled = value;
+  $("report-columns")
+    .querySelectorAll("input, select, button")
+    .forEach((control) => (control.disabled = value));
+  if (!value) renderReportColumns();
   $("reset-background").disabled = value;
   $("generate-button").disabled =
     value ||
@@ -181,6 +191,8 @@ async function selectTemplate(id) {
   ).json();
   if (version !== selectionVersion) return;
   selected = template;
+  $("report-columns").hidden = id !== "laporan";
+  if (id === "laporan") syncReportSchema();
   $("certificate-background").hidden = id !== "sertifikat";
   resetOutput();
   showNotice("");
@@ -284,7 +296,13 @@ function makeArray(name, definition, values = []) {
     headRow = element("tr"),
     body = element("tbody");
   for (const [key, def] of columns)
-    headRow.append(element("th", "", pretty(key) + (def.required ? " *" : "")));
+    headRow.append(
+      element(
+        "th",
+        "",
+        (def.label || pretty(key)) + (def.required ? " *" : ""),
+      ),
+    );
   headRow.append(element("th", "", ""));
   head.append(headRow);
   table.append(head, body);
@@ -501,6 +519,7 @@ $("document-form").addEventListener("submit", async (event) => {
         template: selected.id,
         format,
         data,
+        columns: selected.id === "laporan" ? reportColumns : undefined,
         background:
           selected.id === "sertifikat" ? certificateBackground : undefined,
         filenameField: $("filename-field").value || undefined,
@@ -533,6 +552,7 @@ $("document-form").addEventListener("submit", async (event) => {
           template: selected.id,
           format,
           data,
+          columns: selected.id === "laporan" ? reportColumns : undefined,
           background:
             selected.id === "sertifikat" ? certificateBackground : undefined,
         }),
@@ -604,6 +624,117 @@ $("json-file").addEventListener("change", async () => {
     $("json-file").value = "";
   }
 });
+function syncReportSchema() {
+  selected.schema.fields.items.items.fields = Object.fromEntries(
+    reportColumns.map((c) => [
+      c.key,
+      { type: c.type, required: c.required, label: c.label },
+    ]),
+  );
+}
+function applyReportColumns() {
+  if (selected?.id !== "laporan") return;
+  const data = Object.fromEntries(
+    [...fieldReaders].map(([name, read]) => [name, read()]),
+  );
+  const batch = $("batch-data").value;
+  syncReportSchema();
+  populate(data);
+  $("batch-data").value = batch;
+  updateBatchCount();
+  resetOutput();
+  renderReportColumns();
+}
+function renderReportColumns() {
+  const list = $("report-column-list");
+  list.replaceChildren();
+  reportColumns.forEach((column, index) => {
+    const row = element("div", "report-column-row");
+    const name = element("input");
+    name.value = column.label;
+    name.maxLength = 80;
+    name.setAttribute("aria-label", `Judul kolom ${index + 1}`);
+    name.onchange = () => {
+      if (!name.value.trim()) {
+        name.value = column.label;
+        return;
+      }
+      column.label = name.value.trim();
+      applyReportColumns();
+    };
+    const type = element("select");
+    type.setAttribute("aria-label", `Tipe kolom ${index + 1}`);
+    for (const [value, label] of [
+      ["string", "Teks"],
+      ["number", "Angka"],
+      ["date", "Tanggal"],
+    ]) {
+      const option = element("option", "", label);
+      option.value = value;
+      type.append(option);
+    }
+    type.value = column.type;
+    type.onchange = () => {
+      column.type = type.value;
+      applyReportColumns();
+    };
+    const requiredLabel = element("label", "column-required");
+    const required = element("input");
+    required.type = "checkbox";
+    required.checked = column.required;
+    required.setAttribute("aria-label", `Wajib kolom ${index + 1}`);
+    required.onchange = () => {
+      column.required = required.checked;
+      applyReportColumns();
+    };
+    requiredLabel.append(required, document.createTextNode("Wajib"));
+    const up = element("button", "subtle-button", "↑");
+    up.type = "button";
+    up.setAttribute("aria-label", `Naikkan kolom ${index + 1}`);
+    up.disabled = index === 0 || busy;
+    up.onclick = () => {
+      [reportColumns[index - 1], reportColumns[index]] = [
+        column,
+        reportColumns[index - 1],
+      ];
+      applyReportColumns();
+    };
+    const remove = element("button", "subtle-button", "×");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Hapus kolom ${index + 1}`);
+    remove.disabled = reportColumns.length === 1 || busy;
+    remove.onclick = () => {
+      reportColumns.splice(index, 1);
+      applyReportColumns();
+    };
+    row.append(
+      name,
+      type,
+      requiredLabel,
+      up,
+      remove,
+      element("small", "column-key", `Key JSON: ${column.key}`),
+    );
+    list.append(row);
+  });
+  $("add-report-column").disabled = busy || reportColumns.length >= 12;
+}
+$("add-report-column").onclick = () => {
+  if (reportColumns.length >= 12) return;
+  let number = 1;
+  while (reportColumns.some((c) => c.key === `kolom${number}`)) number++;
+  reportColumns.push({
+    key: `kolom${number}`,
+    label: `Kolom ${number}`,
+    type: "string",
+    required: false,
+  });
+  applyReportColumns();
+};
+$("reset-report-columns").onclick = () => {
+  reportColumns = structuredClone(defaultReportColumns);
+  applyReportColumns();
+};
 const guideSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1684" height="1190" viewBox="0 0 842 595"><rect width="842" height="595" fill="#fff"/><rect x="12" y="12" width="818" height="571" fill="none" stroke="#82966a"/><g font-family="sans-serif" fill="#193f32"><text x="421" y="100" font-size="26" text-anchor="middle">PANDUAN BACKGROUND SERTIFIKAT</text><text x="421" y="135" font-size="14" text-anchor="middle">A4 landscape · Hapus kotak panduan pada desain akhir</text></g>${[
   [101.04, 255.85, 639.92, 71.4, "NAMA"],
   [126.3, 374.85, 589.4, 59.5, "KEGIATAN"],

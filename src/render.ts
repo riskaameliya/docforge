@@ -1,3 +1,8 @@
+import {
+  reportColumnsSchema,
+  defaultReportColumns,
+  type ReportColumn,
+} from "./report.js";
 import { chromium, type Browser } from "playwright";
 import Handlebars from "handlebars";
 import { readFile } from "node:fs/promises";
@@ -51,9 +56,50 @@ export class Renderer {
     format: "pdf" | "png",
     data: unknown,
     background?: string,
+    columns?: ReportColumn[],
   ) {
     const t = await this.templates.load(id);
+    if (columns && id !== "laporan")
+      throw new ApiError(422, "Kolom khusus hanya untuk laporan");
+    const reportColumns =
+      id === "laporan"
+        ? reportColumnsSchema.parse(columns ?? defaultReportColumns)
+        : undefined;
+    if (reportColumns) {
+      t.schema = {
+        ...t.schema,
+        fields: {
+          ...t.schema.fields,
+          items: {
+            type: "array",
+            required: true,
+            items: {
+              fields: Object.fromEntries(
+                reportColumns.map((c) => [
+                  c.key,
+                  { type: c.type, required: c.required },
+                ]),
+              ),
+            },
+          },
+        },
+      };
+    }
     const valid = validateData(t.schema, data);
+    const renderData = reportColumns
+      ? {
+          ...valid,
+          columns: reportColumns,
+          rows: valid.items.map((row: Record<string, unknown>) =>
+            reportColumns.map((c) => ({
+              value:
+                row[c.key] === undefined || row[c.key] === ""
+                  ? "—"
+                  : row[c.key],
+            })),
+          ),
+        }
+      : valid;
     if (background && id !== "sertifikat")
       throw new ApiError(422, "Background khusus hanya untuk sertifikat");
     return this.limiter.run(async () => {
@@ -61,7 +107,7 @@ export class Renderer {
         const { renderOverlay } = await import("./overlay.js");
         return renderOverlay(t, format, valid, this, background);
       }
-      return this.html(t, format, valid);
+      return this.html(t, format, renderData);
     });
   }
   async html(t: Template, format: "pdf" | "png", data: unknown) {

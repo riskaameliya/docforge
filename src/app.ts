@@ -1,3 +1,4 @@
+import { reportColumnsSchema } from "./report.js";
 import Fastify from "fastify";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
@@ -8,6 +9,7 @@ export const requestSchema = z.object({
   template: z.string().regex(/^[\w-]+$/),
   format: z.enum(["pdf", "png"]),
   background: backgroundSchema,
+  columns: reportColumnsSchema.optional(),
   data: z.record(z.string(), z.unknown()),
 });
 export async function createApp(
@@ -98,6 +100,7 @@ export async function createApp(
       b.format,
       b.data,
       b.background,
+      b.columns,
     );
     return reply
       .type(b.format === "pdf" ? "application/pdf" : "image/png")

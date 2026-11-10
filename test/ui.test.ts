@@ -143,6 +143,51 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     expect(await page.locator(".data-table tbody tr").count()).toBe(81);
     await page.getByRole("button", { name: "Hapus baris" }).last().click();
     expect(await page.locator(".data-table tbody tr").count()).toBe(80);
+    await page
+      .getByRole("button", { name: "+ Tambah kolom", exact: true })
+      .click();
+    await page
+      .getByLabel("Judul kolom 4", { exact: true })
+      .fill("Harga satuan");
+    await page.getByLabel("Judul kolom 4", { exact: true }).press("Tab");
+    await page
+      .getByLabel("Tipe kolom 4", { exact: true })
+      .selectOption("number");
+    expect(await page.locator(".data-table th").allTextContents()).toContain(
+      "Harga satuan",
+    );
+    await page.locator('[data-path="items.0.kolom1"]').fill("12500");
+    await page
+      .getByRole("button", { name: "Naikkan kolom 4", exact: true })
+      .click();
+    expect(await page.locator(".data-table th").nth(2).innerText()).toBe(
+      "Harga satuan",
+    );
+    expect(
+      await page.locator('[data-path="items.0.kolom1"]').inputValue(),
+    ).toBe("12500");
+    await page
+      .getByRole("button", { name: "Hapus kolom 4", exact: true })
+      .click();
+    expect(
+      await page.locator(".data-table th").allTextContents(),
+    ).not.toContain("Keterangan");
+    const reportRequest = page.waitForRequest((request) =>
+      request.url().endsWith("/generate"),
+    );
+    await page.locator("#generate-button").click();
+    expect(
+      (await reportRequest)
+        .postDataJSON()
+        .columns.map((column: { label: string }) => column.label),
+    ).toEqual(["Nama", "Jumlah", "Harga satuan"]);
+    await page.waitForFunction(
+      () => !document.getElementById("preview-download")?.hidden,
+    );
+    await page.getByRole("button", { name: "Kembalikan kolom bawaan" }).click();
+    expect(await page.locator(".data-table th").allTextContents()).toContain(
+      "Keterangan",
+    );
     await page.locator('[data-template="sertifikat"]').click();
     await page.waitForSelector("#field-nama");
     await page.locator("#reset-background").click();

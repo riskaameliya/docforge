@@ -37,17 +37,17 @@
   <table>
     <thead>
       <tr>
-        <th>Nama</th>
-        <th>Jumlah</th>
-        <th>Keterangan</th>
+        {{#each columns}}
+        <th>{{label}}</th>
+        {{/each}}
       </tr>
     </thead>
     <tbody>
-      {{#each items}}
+      {{#each rows}}
       <tr>
-        <td>{{nama}}</td>
-        <td>{{jumlah}}</td>
-        <td>{{#if keterangan}}{{keterangan}}{{else}}—{{/if}}</td>
+        {{#each this}}
+        <td>{{value}}</td>
+        {{/each}}
       </tr>
       {{/each}}
     </tbody>

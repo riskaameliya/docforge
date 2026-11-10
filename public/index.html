@@ -140,6 +140,40 @@
               </div>
               <form id="document-form">
                 <section
+                  id="report-columns"
+                  class="certificate-background"
+                  hidden
+                  aria-labelledby="report-columns-title"
+                >
+                  <h3 id="report-columns-title">Kolom laporan</h3>
+                  <p>
+                    Atur judul, tipe data, dan urutan kolom (maksimal 12).
+                    Pengaturan berlaku untuk tabel dan hasil unduhan, termasuk
+                    batch. Menghapus kolom juga menghapus nilainya dari form.
+                  </p>
+                  <div id="report-column-list"></div>
+                  <div class="background-actions">
+                    <button
+                      id="add-report-column"
+                      class="subtle-button"
+                      type="button"
+                    >
+                      + Tambah kolom</button
+                    ><button
+                      id="reset-report-columns"
+                      class="subtle-button"
+                      type="button"
+                    >
+                      Kembalikan kolom bawaan
+                    </button>
+                  </div>
+                  <p class="helper">
+                    Untuk impor JSON, gunakan key yang ditampilkan di setiap
+                    kolom pada objek items. Data yang tidak cocok dengan tipe
+                    kolom akan ditolak saat membuat dokumen.
+                  </p>
+                </section>
+                <section
                   id="certificate-background"
                   class="certificate-background"
                   hidden
