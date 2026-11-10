@@ -153,14 +153,8 @@ export async function createApp(
       reply.type(type).send(await readFile(file)),
     );
   }
-  app.get("/editor", async (_req, reply) =>
-    reply.type("text/html").send(await readFile("public/editor.html")),
-  );
-  app.get("/editor.js", async (_req, reply) =>
-    reply.type("text/javascript").send(await readFile("public/editor.js")),
-  );
   for (const name of ["pdf.mjs", "pdf.worker.mjs"])
-    app.get(`/editor-vendor/${name}`, async (_req, reply) =>
+    app.get(`/pdf-vendor/${name}`, async (_req, reply) =>
       reply
         .type("text/javascript")
         .send(await readFile(`node_modules/pdfjs-dist/build/${name}`)),

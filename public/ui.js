@@ -1127,8 +1127,8 @@ $("background-file").onchange = async () => {
       reader.readAsDataURL(file);
     });
     if (file.type === "application/pdf") {
-      const pdfjs = await import("/editor-vendor/pdf.mjs");
-      pdfjs.GlobalWorkerOptions.workerSrc = "/editor-vendor/pdf.worker.mjs";
+      const pdfjs = await import("/pdf-vendor/pdf.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf-vendor/pdf.worker.mjs";
       const task = pdfjs.getDocument({
         data: new Uint8Array(await file.arrayBuffer()),
         isEvalSupported: false,

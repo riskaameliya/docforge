@@ -1,7 +1,7 @@
-import * as pdfjs from "/editor-vendor/pdf.mjs";
+import * as pdfjs from "/pdf-vendor/pdf.mjs";
 import { zipSync } from "/converter-vendor/fflate.js";
 import { exportTemplate, validIdentifier } from "/template-export.js";
-pdfjs.GlobalWorkerOptions.workerSrc = "/editor-vendor/pdf.worker.mjs";
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf-vendor/pdf.worker.mjs";
 const $ = (id) => document.getElementById(id);
 let pages = [],
   bindings = [],
@@ -106,7 +106,7 @@ function showPage() {
   $("next-page").disabled = current === pages.length - 1 || processing;
   $("source-details").textContent = p.texts.some((t) => t.text.trim())
     ? `${p.texts.filter((t) => t.text.trim()).length} potongan teks · klik untuk dijadikan variabel.`
-    : "Tidak ada teks terdeteksi. PDF scan dapat diekspor statis atau diisi dengan editor overlay.";
+    : "Tidak ada teks terdeteksi. PDF scan dapat diekspor sebagai template statis.";
 }
 function selectText(text) {
   activeId = text.id;

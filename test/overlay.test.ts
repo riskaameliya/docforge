@@ -111,51 +111,6 @@ test("PNG background exports PDF/PNG and missing optional field", async () => {
   }
 }, 30000);
 
-test("editor loads PDF/PNG, adds fields and exports JSON", async () => {
-  const { createApp } = await import("../src/app.js");
-  const { chromium } = await import("playwright");
-  const app = await createApp({ logger: false });
-  const browser = await chromium.launch();
-  try {
-    const url = await app.listen({ port: 0, host: "127.0.0.1" });
-    const page = await browser.newPage();
-    await page.goto(url + "/editor");
-    await page
-      .locator("#file")
-      .setInputFiles("templates/sertifikat/background.pdf");
-    await page.waitForFunction(() =>
-      document
-        .getElementById("status")
-        ?.textContent?.includes("Klik pratinjau"),
-    );
-    await page.locator("#canvas").click({ position: { x: 100, y: 100 } });
-    const fields = JSON.parse(await page.locator("#json").inputValue());
-    expect(fields[0].unit).toBe("percent");
-    expect(fields[0].key).toBe("nama");
-    const downloadPromise = page.waitForEvent("download");
-    await page.locator("#export").click();
-    expect((await downloadPromise).suggestedFilename()).toBe("fields.json");
-    const png = await sharp({
-      create: { width: 600, height: 300, channels: 3, background: "#fff" },
-    })
-      .png()
-      .toBuffer();
-    await page.locator("#file").setInputFiles({
-      name: "background.png",
-      mimeType: "image/png",
-      buffer: png,
-    });
-    await page.waitForFunction(() => {
-      const c = document.querySelector("canvas");
-      return c?.width === 600;
-    });
-    expect(JSON.parse(await page.locator("#json").inputValue())).toEqual([]);
-  } finally {
-    await browser.close();
-    await app.close();
-  }
-}, 30000);
-
 test("uploaded certificate background stays request-local, validates images and supports batch", async () => {
   const app = await createApp({ logger: false });
   const { readFile } = await import("node:fs/promises");
