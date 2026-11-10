@@ -136,3 +136,20 @@ const html = TemplateSuratPemanggilan({ nomorSurat: "002/BPSDM/2026" });
 Konverter mempertahankan koordinat halaman PDF. Grafik/gambar menjadi PNG tertanam; teks yang terbaca menjadi elemen HTML. Font, warna teks, dan posisi hasilnya perlu diperiksa. Font sumber dapat diganti ke font aplikasi pada kode hasil ekspor. PDF scan tidak menjalankan OCR: gunakan editor overlay untuk menambah teks pada latar scan. Struktur semantik tabel, loop `peserta.map(...)`, import entity, pemformatan tanggal, dan relasi data aplikasi seperti contoh surat pemanggilan tidak dapat disimpulkan dari PDF; tambahkan logika tersebut pada kode hasil ekspor. Untuk tabel panjang yang perlu mengalir ke halaman baru, gunakan template HTML dengan loop. Pada PDF dengan ukuran halaman berbeda, CSS menyimpan ukuran masing-masing, sementara config renderer DocForge mengikuti halaman pertama.
 
 Tes `npm run test:converter` memeriksa pemetaan substring, escape HTML/kode, TypeScript strict, PDF beberapa halaman, pemisahan grafik dari teks, ZIP yang dapat dipasang sebagai template, serta tampilan desktop/ponsel.
+
+## Background sertifikat milik pengguna
+
+Pada template **Sertifikat**, pilih PNG/JPG maksimal 5 MB dan 16 megapiksel. Gunakan A4 landscape (297 × 210 mm), misalnya 1684 × 1190 px atau 3508 × 2480 px. Gambar mengisi satu halaman PDF 842 × 595 pt; gambar dengan rasio berbeda dipasang utuh dengan ruang putih, tanpa dipotong. Agar area teks sesuai panduan, gunakan desain berasio A4. Hasil PNG memakai rasterisasi 96 dpi.
+
+Buka **Panduan menyiapkan desain sertifikat** di form dan unduh SVG panduan. Sisakan area kosong berikut, dihitung dari kiri atas:
+
+| Data     | Kiri  | Atas   | Lebar  | Tinggi |
+| -------- | ----- | ------ | ------ | ------ |
+| Nama     | 12%   | 43%    | 76%    | 12%    |
+| Kegiatan | 15%   | 63%    | 70%    | 10%    |
+| Tanggal  | 30%   | 75%    | 40%    | 6%     |
+| Nomor    | 45 pt | 535 pt | 300 pt | 25 pt  |
+
+Judul, logo, bingkai, tanda tangan, dan label tetap harus sudah ada pada gambar. Jangan sertakan data peserta atau kotak panduan dalam desain akhir. Gunakan latar terang di area teks. Posisi belum dapat digeser pada form ini; sesuaikan gambar dengan panduan dan periksa pratinjau.
+
+API `/generate` dan `/generate/batch` menerima properti opsional `background` berupa data URI `data:image/png;base64,...` atau `data:image/jpeg;base64,...`, khusus template `sertifikat`. Body generate dibatasi 8 MiB untuk mengakomodasi gambar base64. Background divalidasi dan dinormalisasi di memori tanpa penulisan disk. Pada batch satu gambar digunakan untuk semua dokumen. Template bawaan tidak berubah, dan pengguna lain tidak menerima gambar tersebut. Tombol **Gunakan desain bawaan** menghapus pilihan gambar pada tab tersebut.

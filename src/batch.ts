@@ -2,11 +2,17 @@ import { zipSync } from "fflate";
 import { z } from "zod";
 import { ApiError } from "./templates.js";
 import type { Renderer } from "./render.js";
+export const backgroundSchema = z
+  .string()
+  .max(7 * 1024 * 1024)
+  .regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/)
+  .optional();
 export const batchSchema = (limit: number) =>
   z.object({
     template: z.string().regex(/^[\w-]+$/),
     format: z.enum(["pdf", "png"]),
     data: z.array(z.record(z.string(), z.unknown())).min(1).max(limit),
+    background: backgroundSchema,
     filenameField: z.string().max(100).optional(),
   });
 export type BatchInput = z.infer<ReturnType<typeof batchSchema>>;
@@ -28,6 +34,8 @@ export async function processBatch(
   renderer: Renderer,
 ): Promise<Buffer> {
   await renderer.templates.load(input.template);
+  if (input.background && input.template !== "sertifikat")
+    throw new ApiError(422, "Background khusus hanya untuk sertifikat");
   const files: Record<string, Uint8Array> = {};
   const result: BatchResult = {
     total: input.data.length,
@@ -41,7 +49,12 @@ export async function processBatch(
       throw new ApiError(503, "Batch terlalu lama. Kurangi jumlah dokumen.");
     let bytes: Uint8Array;
     try {
-      bytes = await renderer.generate(input.template, input.format, data);
+      bytes = await renderer.generate(
+        input.template,
+        input.format,
+        data,
+        input.background,
+      );
     } catch (error) {
       if (!(error instanceof ApiError) || error.statusCode !== 422) throw error;
       result.failures.push({

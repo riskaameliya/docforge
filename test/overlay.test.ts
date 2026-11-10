@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { createApp } from "../src/app.js";
 import { Renderer } from "../src/render.js";
 import { Templates } from "../src/templates.js";
 import { fieldSchema, position, textLayout } from "../src/overlay.js";
@@ -151,6 +152,108 @@ test("editor loads PDF/PNG, adds fields and exports JSON", async () => {
     expect(JSON.parse(await page.locator("#json").inputValue())).toEqual([]);
   } finally {
     await browser.close();
+    await app.close();
+  }
+}, 30000);
+
+test("uploaded certificate background stays request-local, validates images and supports batch", async () => {
+  const app = await createApp({ logger: false });
+  const { readFile } = await import("node:fs/promises");
+  const { unzipSync } = await import("fflate");
+  const original = await readFile("templates/sertifikat/background.pdf");
+  const t = await r.templates.load("sertifikat");
+  const bytes = await sharp({
+    create: { width: 1684, height: 1190, channels: 3, background: "#ff0000" },
+  })
+    .png()
+    .toBuffer();
+  const background = `data:image/png;base64,${bytes.toString("base64")}`;
+  const payload = { template: t.id, format: "png", data: t.sample, background };
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/generate",
+      payload,
+    });
+    expect(response.statusCode).toBe(200);
+    const pixel = await sharp(response.rawPayload)
+      .extract({ left: 0, top: 0, width: 1, height: 1 })
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    expect([...pixel]).toEqual([255, 0, 0]);
+    const pdf = await app.inject({
+      method: "POST",
+      url: "/generate",
+      payload: { ...payload, format: "pdf" },
+    });
+    const page = (await PDFDocument.load(pdf.rawPayload)).getPages()[0];
+    expect(page.getWidth()).toBe(842);
+    expect(page.getHeight()).toBe(595);
+    const batch = await app.inject({
+      method: "POST",
+      url: "/generate/batch",
+      payload: { ...payload, format: "pdf", data: [t.sample] },
+    });
+    expect(batch.statusCode).toBe(200);
+    expect(Object.keys(unzipSync(batch.rawPayload))).toContain(
+      "0001-document.pdf",
+    );
+    expect(await readFile("templates/sertifikat/background.pdf")).toEqual(
+      original,
+    );
+    const builtin = await app.inject({
+      method: "POST",
+      url: "/generate",
+      payload: { ...payload, background: undefined },
+    });
+    const builtinPixel = await sharp(builtin.rawPayload)
+      .extract({ left: 0, top: 0, width: 1, height: 1 })
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    expect([...builtinPixel]).not.toEqual([255, 0, 0]);
+    const square = `data:image/png;base64,${(
+      await sharp({
+        create: { width: 500, height: 500, channels: 3, background: "#00ff00" },
+      })
+        .png()
+        .toBuffer()
+    ).toString("base64")}`;
+    const squareResponse = await app.inject({
+      method: "POST",
+      url: "/generate",
+      payload: { ...payload, background: square },
+    });
+    expect(squareResponse.statusCode).toBe(200);
+    const center = await sharp(squareResponse.rawPayload)
+      .extract({ left: 550, top: 50, width: 1, height: 1 })
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    expect([...center]).toEqual([0, 255, 0]);
+    for (const invalid of ["data:image/png;base64,YmFk"]) {
+      expect(
+        (
+          await app.inject({
+            method: "POST",
+            url: "/generate",
+            payload: { ...payload, background: invalid },
+          })
+        ).statusCode,
+      ).toBe(422);
+    }
+    const other = await r.templates.load("surat-resmi");
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/generate",
+          payload: { ...payload, template: other.id, data: other.sample },
+        })
+      ).statusCode,
+    ).toBe(422);
+  } finally {
     await app.close();
   }
 }, 30000);

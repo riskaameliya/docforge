@@ -46,13 +46,20 @@ export class Renderer {
     this.browser = undefined;
     if (browser) await (await browser).close();
   }
-  async generate(id: string, format: "pdf" | "png", data: unknown) {
+  async generate(
+    id: string,
+    format: "pdf" | "png",
+    data: unknown,
+    background?: string,
+  ) {
     const t = await this.templates.load(id);
     const valid = validateData(t.schema, data);
+    if (background && id !== "sertifikat")
+      throw new ApiError(422, "Background khusus hanya untuk sertifikat");
     return this.limiter.run(async () => {
       if (t.config.type === "overlay") {
         const { renderOverlay } = await import("./overlay.js");
-        return renderOverlay(t, format, valid, this);
+        return renderOverlay(t, format, valid, this, background);
       }
       return this.html(t, format, valid);
     });

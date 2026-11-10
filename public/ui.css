@@ -1499,3 +1499,84 @@ button.connection-pill {
     font-size: 13px;
   }
 }
+
+.certificate-background {
+  margin: 0 24px 24px;
+  padding: 20px;
+  border: 1px solid #dce3d2;
+  border-radius: 12px;
+  background: #f7f9f2;
+}
+.certificate-background h3 {
+  margin: 0 0 10px;
+}
+.certificate-background p,
+.certificate-background li {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.certificate-background input {
+  display: block;
+  max-width: 100%;
+  margin: 12px 0;
+}
+.background-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+#background-preview {
+  width: 100%;
+  margin-top: 12px;
+  border-radius: 6px;
+}
+.certificate-background details {
+  margin-top: 16px;
+}
+.certificate-background summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.certificate-guide svg {
+  width: 100%;
+  height: auto;
+}
+
+.background-error {
+  color: #a02c2c;
+  font-weight: 600;
+}
+#background-preview {
+  aspect-ratio: 842 / 595;
+  object-fit: contain;
+  background: white;
+}
+
+@media (min-width: 701px) {
+  .preview-panel {
+    position: sticky;
+    top: 16px;
+    display: flex;
+    flex-direction: column;
+    height: min(720px, calc(100dvh - 32px));
+    min-height: 0;
+  }
+  .preview-panel > .panel-heading,
+  .preview-panel > .preview-download {
+    flex-shrink: 0;
+  }
+  .preview-panel .preview-body {
+    flex: 1;
+    min-height: 0;
+  }
+  .preview-panel .preview-body iframe {
+    height: 100%;
+    min-height: 0;
+  }
+  .preview-panel .preview-body img {
+    max-height: 100%;
+  }
+}

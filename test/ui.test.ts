@@ -1,4 +1,5 @@
 import { expect, test } from "vitest";
+import sharp from "sharp";
 import { chromium } from "playwright";
 import { readFile, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
@@ -44,6 +45,51 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
       path: "/tmp/docforge-ui-desktop.png",
       fullPage: true,
     });
+    await page.locator("#certificate-background summary").click();
+    expect(await page.locator("#certificate-guide svg").count()).toBe(1);
+    const guideEvent = page.waitForEvent("download");
+    await page.locator("#download-guide").click();
+    expect((await guideEvent).suggestedFilename()).toBe(
+      "panduan-background-sertifikat.svg",
+    );
+    await page.locator("#background-file").setInputFiles({
+      name: "rusak.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("not an image"),
+    });
+    await page.waitForFunction(
+      () => !document.getElementById("background-error")?.hidden,
+    );
+    expect(await page.locator("#generate-button").isDisabled()).toBe(true);
+    expect(await page.locator("#background-name").innerText()).toContain(
+      "belum diterapkan",
+    );
+    await page.locator("#background-file").setInputFiles({
+      name: "desain.png",
+      mimeType: "image/png",
+      buffer: await sharp({
+        create: {
+          width: 1600,
+          height: 900,
+          channels: 3,
+          background: "#eef4e8",
+        },
+      })
+        .png()
+        .toBuffer(),
+    });
+    await page.waitForFunction(
+      () =>
+        document.getElementById("background-name")?.textContent ===
+        "desain.png",
+    );
+    expect(await page.locator("#background-preview").isVisible()).toBe(true);
+    expect(
+      await page
+        .locator("#background-file")
+        .evaluate((input: HTMLInputElement) => input.files?.[0]?.name),
+    ).toBe("desain.png");
+    expect(await page.locator("#background-error").isVisible()).toBe(false);
     await page.locator("#field-nama").fill("Dr. Éka Pratiwi, S.T.");
     await page.locator("#generate-button").click();
     await page.waitForFunction(
@@ -69,6 +115,9 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     );
     await page.locator('[data-template="surat-resmi"]').click();
     await page.waitForSelector("#field-penerima");
+    expect(await page.locator("#certificate-background").isVisible()).toBe(
+      false,
+    );
     await page.locator("#json-file").setInputFiles({
       name: "data.json",
       mimeType: "application/json",
@@ -96,6 +145,10 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     expect(await page.locator(".data-table tbody tr").count()).toBe(80);
     await page.locator('[data-template="sertifikat"]').click();
     await page.waitForSelector("#field-nama");
+    await page.locator("#reset-background").click();
+    expect(await page.locator("#background-name").innerText()).toContain(
+      "bawaan",
+    );
     await page.locator("#field-nama").fill("");
     await page.locator("#mode-batch").click();
     const zip = zipSync({ "report.json": Buffer.from('{"succeeded":1}') });

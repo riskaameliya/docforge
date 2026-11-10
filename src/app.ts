@@ -3,10 +3,11 @@ import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { ApiError } from "./templates.js";
 import { Renderer, Limiter } from "./render.js";
-import { processBatch, batchSchema } from "./batch.js";
+import { processBatch, batchSchema, backgroundSchema } from "./batch.js";
 export const requestSchema = z.object({
   template: z.string().regex(/^[\w-]+$/),
   format: z.enum(["pdf", "png"]),
+  background: backgroundSchema,
   data: z.record(z.string(), z.unknown()),
 });
 export async function createApp(
@@ -90,9 +91,14 @@ export async function createApp(
       config: t.config,
     };
   });
-  app.post("/generate", async (req, reply) => {
+  app.post("/generate", { bodyLimit: 8 * 1024 * 1024 }, async (req, reply) => {
     const b = requestSchema.parse(req.body);
-    const result = await renderer.generate(b.template, b.format, b.data);
+    const result = await renderer.generate(
+      b.template,
+      b.format,
+      b.data,
+      b.background,
+    );
     return reply
       .type(b.format === "pdf" ? "application/pdf" : "image/png")
       .header(
@@ -101,14 +107,18 @@ export async function createApp(
       )
       .send(result);
   });
-  app.post("/generate/batch", async (req, reply) => {
-    const input = batchSchema(limits.batch).parse(req.body);
-    const bytes = await batchLimiter.run(() => processBatch(input, renderer));
-    return reply
-      .type("application/zip")
-      .header("Content-Disposition", 'attachment; filename="batch.zip"')
-      .send(bytes);
-  });
+  app.post(
+    "/generate/batch",
+    { bodyLimit: 8 * 1024 * 1024 },
+    async (req, reply) => {
+      const input = batchSchema(limits.batch).parse(req.body);
+      const bytes = await batchLimiter.run(() => processBatch(input, renderer));
+      return reply
+        .type("application/zip")
+        .header("Content-Disposition", 'attachment; filename="batch.zip"')
+        .send(bytes);
+    },
+  );
   for (const [url, file, type] of [
     ["/", "public/index.html", "text/html; charset=utf-8"],
     ["/ui.css", "public/ui.css", "text/css"],

@@ -139,6 +139,97 @@
                 </div>
               </div>
               <form id="document-form">
+                <section
+                  id="certificate-background"
+                  class="certificate-background"
+                  hidden
+                  aria-labelledby="background-title"
+                >
+                  <h3 id="background-title">Background sertifikat</h3>
+                  <p>
+                    Gunakan desain bawaan atau pilih gambar milikmu. Teks nama,
+                    kegiatan, tanggal, dan nomor akan ditambahkan otomatis.
+                  </p>
+                  <label for="background-file"
+                    >Pilih gambar PNG/JPG (maks. 5 MB)</label
+                  >
+                  <input
+                    id="background-file"
+                    type="file"
+                    accept="image/png,image/jpeg"
+                  />
+                  <p
+                    id="background-error"
+                    class="background-error"
+                    role="alert"
+                    hidden
+                  ></p>
+                  <div class="background-actions">
+                    <span id="background-name" role="status"
+                      >Menggunakan desain bawaan</span
+                    ><button
+                      id="reset-background"
+                      class="subtle-button"
+                      type="button"
+                      hidden
+                    >
+                      Gunakan desain bawaan
+                    </button>
+                  </div>
+                  <img
+                    id="background-preview"
+                    alt="Background sertifikat yang dipilih"
+                    hidden
+                  />
+                  <details>
+                    <summary>Panduan menyiapkan desain sertifikat</summary>
+                    <p>
+                      Gunakan A4 landscape (297 × 210 mm), misalnya 1684 × 1190
+                      px atau 3508 × 2480 px (maks. 16 megapiksel). Gambar
+                      dipasang utuh ke A4; rasio berbeda diberi ruang putih
+                      tanpa dipotong. Jangan tulis data peserta pada gambar;
+                      sisakan area berikut. Posisi dihitung dari sudut kiri
+                      atas.
+                    </p>
+                    <div
+                      id="certificate-guide"
+                      class="certificate-guide"
+                      aria-label="Panduan posisi teks sertifikat"
+                    ></div>
+                    <ul>
+                      <li>Nama: kiri 12%, atas 43%, lebar 76%, tinggi 12%.</li>
+                      <li>
+                        Kegiatan: kiri 15%, atas 63%, lebar 70%, tinggi 10%.
+                      </li>
+                      <li>
+                        Tanggal: kiri 30%, atas 75%, lebar 40%, tinggi 6%.
+                      </li>
+                      <li>
+                        Nomor: kiri 5,34%, atas 89,92%, lebar 35,63%, tinggi
+                        4,20%.
+                      </li>
+                    </ul>
+                    <p>
+                      Tempatkan judul, logo, bingkai, dan tanda tangan di luar
+                      kotak tersebut. Gunakan warna latar terang pada area teks
+                      agar tulisan gelap terbaca. Teks panjang akan diperkecil
+                      otomatis. Periksa pratinjau sebelum mencetak. Desain
+                      dengan posisi berbeda perlu disesuaikan dahulu.
+                    </p>
+                    <button
+                      id="download-guide"
+                      class="subtle-button"
+                      type="button"
+                    >
+                      ↓ Unduh panduan posisi (SVG)
+                    </button>
+                  </details>
+                  <p class="helper">
+                    Gambar dikirim saat membuat dokumen, diproses sementara,
+                    lalu dibuang tanpa diarsipkan. Background yang sama berlaku
+                    untuk seluruh batch.
+                  </p>
+                </section>
                 <div id="dynamic-fields" class="form-fields">
                   <div class="empty-form">
                     <span>↖</span> Mulai dengan memilih template di atas.

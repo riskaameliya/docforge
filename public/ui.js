@@ -1,3 +1,5 @@
+let certificateBackground;
+let backgroundError = false;
 const $ = (id) => document.getElementById(id);
 const metadata = {
   sertifikat: {
@@ -65,7 +67,13 @@ function resetOutput() {
 }
 function setBusy(value) {
   busy = value;
-  $("generate-button").disabled = value || !selected || !connected;
+  $("background-file").disabled = value;
+  $("reset-background").disabled = value;
+  $("generate-button").disabled =
+    value ||
+    !selected ||
+    !connected ||
+    (selected.id === "sertifikat" && backgroundError);
   $("sample-button").disabled = value || !selected;
   $("upload-button").disabled = value || !selected;
   document
@@ -173,6 +181,7 @@ async function selectTemplate(id) {
   ).json();
   if (version !== selectionVersion) return;
   selected = template;
+  $("certificate-background").hidden = id !== "sertifikat";
   resetOutput();
   showNotice("");
   document.querySelectorAll(".template-card").forEach((card) => {
@@ -472,6 +481,7 @@ function showOutput(blob, format) {
 $("document-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (busy || !selected) return;
+  if (selected.id === "sertifikat" && backgroundError) return;
   clearErrors();
   showNotice("");
   const format = document.querySelector('input[name="format"]:checked').value;
@@ -491,6 +501,8 @@ $("document-form").addEventListener("submit", async (event) => {
         template: selected.id,
         format,
         data,
+        background:
+          selected.id === "sertifikat" ? certificateBackground : undefined,
         filenameField: $("filename-field").value || undefined,
       };
       const response = await request("/generate/batch", {
@@ -517,7 +529,13 @@ $("document-form").addEventListener("submit", async (event) => {
       );
       const response = await request("/generate", {
         method: "POST",
-        body: JSON.stringify({ template: selected.id, format, data }),
+        body: JSON.stringify({
+          template: selected.id,
+          format,
+          data,
+          background:
+            selected.id === "sertifikat" ? certificateBackground : undefined,
+        }),
       });
       showOutput(await response.blob(), format);
       setBusy(false);
@@ -586,6 +604,94 @@ $("json-file").addEventListener("change", async () => {
     $("json-file").value = "";
   }
 });
+const guideSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1684" height="1190" viewBox="0 0 842 595"><rect width="842" height="595" fill="#fff"/><rect x="12" y="12" width="818" height="571" fill="none" stroke="#82966a"/><g font-family="sans-serif" fill="#193f32"><text x="421" y="100" font-size="26" text-anchor="middle">PANDUAN BACKGROUND SERTIFIKAT</text><text x="421" y="135" font-size="14" text-anchor="middle">A4 landscape · Hapus kotak panduan pada desain akhir</text></g>${[
+  [101.04, 255.85, 639.92, 71.4, "NAMA"],
+  [126.3, 374.85, 589.4, 59.5, "KEGIATAN"],
+  [252.6, 446.25, 336.8, 35.7, "TANGGAL"],
+  [45, 535, 300, 25, "NOMOR"],
+]
+  .map(
+    ([x, y, w, h, label]) =>
+      `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#edf2e6" stroke="#193f32" stroke-dasharray="5 3"/><text x="${x + w / 2}" y="${y + h / 2 + 4}" font-family="sans-serif" font-size="12" fill="#193f32" text-anchor="middle">${label}</text>`,
+  )
+  .join("")}</svg>`;
+$("certificate-guide").innerHTML = guideSvg;
+$("download-guide").onclick = () => {
+  const url = URL.createObjectURL(
+    new Blob([guideSvg], { type: "image/svg+xml" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "panduan-background-sertifikat.svg";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+$("background-file").onchange = async () => {
+  const file = $("background-file").files[0];
+  if (!file || busy) return;
+  setBusy(true);
+  resetOutput();
+  $("background-error").hidden = true;
+  try {
+    if (
+      !["image/png", "image/jpeg"].includes(file.type) ||
+      file.size > 5 * 1024 * 1024
+    )
+      throw new Error("Pilih PNG/JPG maksimal 5 MB.");
+    const value = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Gambar belum dapat dibaca."));
+      reader.readAsDataURL(file);
+    });
+    const image = new Image();
+    image.src = value;
+    await image.decode().catch(() => {
+      throw new Error(
+        "Gambar tidak dapat dibaca. Pilih file PNG/JPG yang valid.",
+      );
+    });
+    if (image.naturalWidth * image.naturalHeight > 16000000)
+      throw new Error(
+        "Gambar maksimal 16 megapiksel. Kecilkan resolusi gambar lalu pilih ulang.",
+      );
+    backgroundError = false;
+    certificateBackground = value;
+    $("background-preview").src = value;
+    $("background-preview").hidden = false;
+    $("background-name").textContent = file.name;
+    $("reset-background").hidden = false;
+    resetOutput();
+    showNotice(
+      "Background siap. Gambar dipasang utuh ke A4; ruang putih ditambahkan jika rasionya berbeda. Klik Buat dokumen untuk menerapkannya.",
+      true,
+    );
+  } catch (error) {
+    backgroundError = true;
+    $("background-error").textContent =
+      error.message || "Gambar tidak dapat dibaca. Pilih PNG/JPG yang valid.";
+    $("background-error").hidden = false;
+    $("background-name").textContent = "Gambar belum diterapkan";
+    $("reset-background").hidden = false;
+    $("background-preview").hidden = true;
+    $("background-file").value = "";
+  } finally {
+    setBusy(false);
+  }
+};
+$("reset-background").onclick = () => {
+  certificateBackground = undefined;
+  backgroundError = false;
+  $("background-error").hidden = true;
+  $("background-file").value = "";
+  $("background-preview").removeAttribute("src");
+  $("background-preview").hidden = true;
+  $("background-name").textContent = "Menggunakan desain bawaan";
+  $("reset-background").hidden = true;
+  resetOutput();
+  showNotice("");
+  setBusy(false);
+};
 window.addEventListener("beforeunload", () => {
   if (outputUrl) URL.revokeObjectURL(outputUrl);
 });
