@@ -150,7 +150,7 @@ Buka **Panduan menyiapkan desain sertifikat** di form dan unduh SVG panduan. Sis
 | Tanggal  | 30%   | 75%    | 40%    | 6%     |
 | Nomor    | 45 pt | 535 pt | 300 pt | 25 pt  |
 
-Judul, logo, bingkai, tanda tangan, dan label tetap harus sudah ada pada gambar. Jangan sertakan data peserta atau kotak panduan dalam desain akhir. Gunakan latar terang di area teks. Posisi belum dapat digeser pada form ini; sesuaikan gambar dengan panduan dan periksa pratinjau.
+Judul, logo, bingkai, tanda tangan, dan label tetap harus sudah ada pada gambar. Jangan sertakan data peserta atau kotak panduan dalam desain akhir. Gunakan latar terang di area teks. Posisi dapat digeser melalui pengaturan field pada form; periksa pratinjau sebelum mencetak.
 
 API `/generate` dan `/generate/batch` menerima properti opsional `background` berupa data URI `data:image/png;base64,...` atau `data:image/jpeg;base64,...`, khusus template `sertifikat`. Body generate dibatasi 8 MiB untuk mengakomodasi gambar base64. Background divalidasi dan dinormalisasi di memori tanpa penulisan disk. Pada batch satu gambar digunakan untuk semua dokumen. Template bawaan tidak berubah, dan pengguna lain tidak menerima gambar tersebut. Tombol **Gunakan desain bawaan** menghapus pilihan gambar pada tab tersebut.
 
@@ -163,7 +163,48 @@ Pengaturan berlaku untuk PDF/PNG serta seluruh dokumen batch di tab tersebut, ta
 API `/generate` dan `/generate/batch` menerima `columns` opsional, khusus template `laporan`:
 
 ```json
-[{"key":"produk","label":"Nama produk","type":"string","required":true},{"key":"harga","label":"Harga satuan","type":"number","required":true}]
+[
+  {
+    "key": "produk",
+    "label": "Nama produk",
+    "type": "string",
+    "required": true
+  },
+  {
+    "key": "harga",
+    "label": "Harga satuan",
+    "type": "number",
+    "required": true
+  }
+]
 ```
 
 Data baris contohnya `{"produk":"Buku","harga":12500}` di dalam `items`. Tipe yang tersedia: `string`, `number`, `date` (YYYY-MM-DD). Key harus unik, diawali huruf, dan hanya menggunakan huruf/angka/underscore (maksimal 40 karakter). Jika `columns` tidak dikirim, sistem memakai kolom bawaan. Label dan isi sel di-escape saat render.
+
+## Field dan posisi sertifikat custom
+
+Buka **Atur field dan posisi teks sertifikat**. Tambahkan atau hapus field (1–20), ubah label, tipe data (teks/angka/tanggal), status wajib, ukuran font, warna, dan perataan. Geser kotak pada peta background menggunakan mouse/sentuhan atau tombol panah (1% per langkah). Posisi kiri/atas serta lebar/tinggi memakai persen dari halaman A4; kotak dibatasi di dalam halaman. Peta menunjukkan area field, sementara hasil tipografi sebenarnya diperiksa melalui PDF/PNG. Tanpa gambar upload, peta memakai latar kosong untuk acuan posisi.
+
+Label field adalah judul input, bukan teks yang dicetak. Elemen tetap yang sudah menyatu dengan background bawaan tidak dapat dihapus lewat pengaturan field; unggah background sendiri untuk menggantinya. Field bawaan dapat dikembalikan dengan tombol **Kembalikan field bawaan**. Menghapus field menghapus nilainya dari form; mengubah tipe dapat mengosongkan nilai yang tidak cocok.
+
+API generate dan batch menerima `certificateFields` opsional, khusus template `sertifikat`, misalnya:
+
+```json
+[
+  {
+    "key": "instansi",
+    "label": "Instansi",
+    "type": "string",
+    "required": true,
+    "x": 10,
+    "y": 40,
+    "width": 80,
+    "height": 12,
+    "fontSize": 24,
+    "color": "#172b4d",
+    "align": "center"
+  }
+]
+```
+
+Data contohnya `{"instansi":"Universitas Contoh"}`. Font memakai Noto Sans bawaan dengan wrap dan auto-shrink; font minimum 6 pt. Field wajib divalidasi terhadap data. Pada batch, pengaturan yang sama berlaku pada semua dokumen. Pengaturan hanya berada di tab browser dan permintaan, tanpa mengubah template atau menyimpan data ke server.

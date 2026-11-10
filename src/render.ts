@@ -1,4 +1,8 @@
 import {
+  certificateFieldsSchema,
+  type CertificateField,
+} from "./certificate.js";
+import {
   reportColumnsSchema,
   defaultReportColumns,
   type ReportColumn,
@@ -57,6 +61,7 @@ export class Renderer {
     data: unknown,
     background?: string,
     columns?: ReportColumn[],
+    certificateFields?: CertificateField[],
   ) {
     const t = await this.templates.load(id);
     if (columns && id !== "laporan")
@@ -85,6 +90,19 @@ export class Renderer {
         },
       };
     }
+    if (certificateFields) {
+      if (id !== "sertifikat")
+        throw new ApiError(422, "Field khusus hanya untuk sertifikat");
+      certificateFields = certificateFieldsSchema.parse(certificateFields);
+      t.schema = {
+        fields: Object.fromEntries(
+          certificateFields.map((f) => [
+            f.key,
+            { type: f.type, required: f.required },
+          ]),
+        ),
+      };
+    }
     const valid = validateData(t.schema, data);
     const renderData = reportColumns
       ? {
@@ -105,7 +123,14 @@ export class Renderer {
     return this.limiter.run(async () => {
       if (t.config.type === "overlay") {
         const { renderOverlay } = await import("./overlay.js");
-        return renderOverlay(t, format, valid, this, background);
+        return renderOverlay(
+          t,
+          format,
+          valid,
+          this,
+          background,
+          certificateFields,
+        );
       }
       return this.html(t, format, renderData);
     });

@@ -1614,3 +1614,67 @@ button.connection-pill {
   flex-basis: 100%;
   color: #63735c;
 }
+
+#certificate-layout {
+  position: relative;
+  aspect-ratio: 842 / 595;
+  width: 100%;
+  background: #fffef5;
+  border: 1px solid #cad5bf;
+  margin: 12px 0;
+  overflow: hidden;
+}
+#certificate-layout > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.layout-note {
+  display: block;
+  padding: 8px;
+  font-size: 11px;
+  color: #63735c;
+}
+.certificate-field-box {
+  position: absolute;
+  background: #e4eedc99;
+  border: 1px dashed #456b42;
+  font: inherit;
+  font-size: 10px;
+  padding: 0;
+  overflow: hidden;
+  cursor: move;
+  touch-action: none;
+}
+.certificate-field-box:focus-visible {
+  outline: 2px solid #193f32;
+}
+.certificate-field-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #dce3d2;
+}
+.certificate-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: calc(50% - 5px);
+  min-width: 0;
+  font-size: 11px;
+}
+.certificate-control input,
+.certificate-control select {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  padding: 6px;
+  border: 1px solid #dce3d2;
+  border-radius: 5px;
+}
+.certificate-control input[type="checkbox"] {
+  width: auto;
+  align-self: flex-start;
+}

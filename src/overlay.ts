@@ -1,3 +1,4 @@
+import type { CertificateField } from "./certificate.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
@@ -98,9 +99,20 @@ export async function renderOverlay(
   data: any,
   renderer: Renderer,
   customBackground?: string,
+  customFields?: CertificateField[],
 ): Promise<Buffer> {
   const fields = fieldsSchema.parse(
-    JSON.parse(await readFile(path.join(t.dir, "fields.json"), "utf8")),
+    customFields
+      ? customFields.map((f) => ({
+          ...f,
+          page: 1,
+          unit: "percent",
+          font: "NotoSans-Regular.ttf",
+          autoShrink: true,
+          wrap: true,
+          minFontSize: 6,
+        }))
+      : JSON.parse(await readFile(path.join(t.dir, "fields.json"), "utf8")),
   );
   const background = t.config.background;
   if (!background || !/^.+\.(pdf|png)$/i.test(background))

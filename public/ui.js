@@ -1,3 +1,5 @@
+let certificateFields;
+let defaultCertificateFields;
 const defaultReportColumns = [
   { key: "nama", label: "Nama", type: "string", required: true },
   { key: "jumlah", label: "Jumlah", type: "number", required: true },
@@ -74,6 +76,11 @@ function resetOutput() {
 function setBusy(value) {
   busy = value;
   $("background-file").disabled = value;
+  $("certificate-settings")
+    .querySelectorAll("input, select, button")
+    .forEach((control) => (control.disabled = value));
+  $("certificate-layout").inert = value;
+  if (!value && certificateFields) renderCertificateFields();
   $("report-columns")
     .querySelectorAll("input, select, button")
     .forEach((control) => (control.disabled = value));
@@ -193,6 +200,12 @@ async function selectTemplate(id) {
   selected = template;
   $("report-columns").hidden = id !== "laporan";
   if (id === "laporan") syncReportSchema();
+  if (id === "sertifikat") {
+    defaultCertificateFields = structuredClone(template.certificateFields);
+    certificateFields ??= structuredClone(defaultCertificateFields);
+    syncCertificateSchema();
+    renderCertificateFields();
+  }
   $("certificate-background").hidden = id !== "sertifikat";
   resetOutput();
   showNotice("");
@@ -214,7 +227,7 @@ function makeScalar(name, definition, value, path, label = true) {
     (typeof value === "string" && value.length > 140);
   if (multiline) wrapper.classList.add("full");
   if (label) {
-    const title = element("label", "", pretty(name));
+    const title = element("label", "", definition.label || pretty(name));
     title.htmlFor = id;
     title.append(
       element(
@@ -519,6 +532,8 @@ $("document-form").addEventListener("submit", async (event) => {
         template: selected.id,
         format,
         data,
+        certificateFields:
+          selected.id === "sertifikat" ? certificateFields : undefined,
         columns: selected.id === "laporan" ? reportColumns : undefined,
         background:
           selected.id === "sertifikat" ? certificateBackground : undefined,
@@ -552,6 +567,8 @@ $("document-form").addEventListener("submit", async (event) => {
           template: selected.id,
           format,
           data,
+          certificateFields:
+            selected.id === "sertifikat" ? certificateFields : undefined,
           columns: selected.id === "laporan" ? reportColumns : undefined,
           background:
             selected.id === "sertifikat" ? certificateBackground : undefined,
@@ -624,6 +641,248 @@ $("json-file").addEventListener("change", async () => {
     $("json-file").value = "";
   }
 });
+function syncCertificateSchema() {
+  selected.schema.fields = Object.fromEntries(
+    certificateFields.map((f) => [
+      f.key,
+      { type: f.type, required: f.required, label: f.label },
+    ]),
+  );
+}
+function applyCertificateFields() {
+  if (selected?.id !== "sertifikat") return;
+  const data = Object.fromEntries(
+    [...fieldReaders].map(([name, read]) => [name, read()]),
+  );
+  const batch = $("batch-data").value;
+  syncCertificateSchema();
+  populate(data);
+  $("batch-data").value = batch;
+  updateBatchCount();
+  resetOutput();
+  renderCertificateFields();
+}
+function renderCertificateFields() {
+  const stage = $("certificate-layout");
+  stage.replaceChildren();
+  if (certificateBackground) {
+    const image = element("img");
+    image.src = certificateBackground;
+    image.alt = "Background dan peta posisi";
+    stage.append(image);
+  } else
+    stage.append(
+      element(
+        "span",
+        "layout-note",
+        "Peta A4 · Unggah background untuk mengatur posisi pada desainmu",
+      ),
+    );
+  certificateFields.forEach((field, index) => {
+    const box = element("button", "certificate-field-box", field.label);
+    box.type = "button";
+    box.setAttribute("aria-label", `Geser field ${field.label}`);
+    function positionBox() {
+      box.style.cssText = `left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;color:${field.color};`;
+    }
+    positionBox();
+    box.onpointerdown = (event) => {
+      if (busy || event.button !== 0) return;
+      event.preventDefault();
+      box.setPointerCapture(event.pointerId);
+      const rect = stage.getBoundingClientRect(),
+        startX = event.clientX,
+        startY = event.clientY,
+        x = field.x,
+        y = field.y;
+      box.onpointermove = (move) => {
+        field.x = Math.max(
+          0,
+          Math.min(
+            100 - field.width,
+            x + ((move.clientX - startX) / rect.width) * 100,
+          ),
+        );
+        field.y = Math.max(
+          0,
+          Math.min(
+            100 - field.height,
+            y + ((move.clientY - startY) / rect.height) * 100,
+          ),
+        );
+        positionBox();
+      };
+      const finish = () => {
+        box.onpointermove = null;
+        box.onpointerup = null;
+        box.onpointercancel = null;
+        applyCertificateFields();
+      };
+      box.onpointerup = finish;
+      box.onpointercancel = finish;
+    };
+    box.onkeydown = (event) => {
+      const directions = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+      };
+      const direction = directions[event.key];
+      if (!direction) return;
+      event.preventDefault();
+      field.x = Math.max(
+        0,
+        Math.min(100 - field.width, field.x + direction[0]),
+      );
+      field.y = Math.max(
+        0,
+        Math.min(100 - field.height, field.y + direction[1]),
+      );
+      applyCertificateFields();
+      stage.querySelectorAll("button")[index]?.focus();
+    };
+    stage.append(box);
+  });
+  const list = $("certificate-field-list");
+  list.replaceChildren();
+  certificateFields.forEach((field, index) => {
+    const card = element("div", "certificate-field-card");
+    function control(label, input) {
+      const wrap = element("label", "certificate-control", label);
+      wrap.append(input);
+      card.append(wrap);
+      return input;
+    }
+    const label = element("input");
+    label.value = field.label;
+    label.maxLength = 80;
+    label.setAttribute("aria-label", `Judul field ${index + 1}`);
+    label.onchange = () => {
+      if (!label.value.trim()) {
+        label.value = field.label;
+        return;
+      }
+      field.label = label.value.trim();
+      applyCertificateFields();
+    };
+    control("Judul field", label);
+    const type = element("select");
+    type.setAttribute("aria-label", `Tipe field ${index + 1}`);
+    for (const [value, text] of [
+      ["string", "Teks"],
+      ["number", "Angka"],
+      ["date", "Tanggal"],
+    ]) {
+      const option = element("option", "", text);
+      option.value = value;
+      type.append(option);
+    }
+    type.value = field.type;
+    type.onchange = () => {
+      field.type = type.value;
+      applyCertificateFields();
+    };
+    control("Tipe data", type);
+    for (const [key, title, min, max] of [
+      ["x", "Kiri (%)", 0, 100 - field.width],
+      ["y", "Atas (%)", 0, 100 - field.height],
+      ["width", "Lebar (%)", 0.5, 100 - field.x],
+      ["height", "Tinggi (%)", 0.5, 100 - field.y],
+      ["fontSize", "Ukuran font (pt)", 6, 100],
+    ]) {
+      const input = element("input");
+      input.type = "number";
+      input.min = min;
+      input.max = max;
+      input.step = "any";
+      input.value = Number(field[key].toFixed(2));
+      input.setAttribute("aria-label", `${title} field ${index + 1}`);
+      input.onchange = () => {
+        const value = Number(input.value);
+        if (input.value === "" || !Number.isFinite(value)) {
+          input.value = field[key];
+          return;
+        }
+        field[key] = Math.max(min, Math.min(max, value));
+        applyCertificateFields();
+      };
+      control(title, input);
+    }
+    const color = element("input");
+    color.type = "color";
+    color.value = field.color;
+    color.setAttribute("aria-label", `Warna field ${index + 1}`);
+    color.onchange = () => {
+      field.color = color.value;
+      applyCertificateFields();
+    };
+    control("Warna", color);
+    const align = element("select");
+    align.setAttribute("aria-label", `Perataan field ${index + 1}`);
+    for (const [value, text] of [
+      ["left", "Kiri"],
+      ["center", "Tengah"],
+      ["right", "Kanan"],
+    ]) {
+      const option = element("option", "", text);
+      option.value = value;
+      align.append(option);
+    }
+    align.value = field.align;
+    align.onchange = () => {
+      field.align = align.value;
+      applyCertificateFields();
+    };
+    control("Perataan", align);
+    const required = element("input");
+    required.type = "checkbox";
+    required.checked = field.required;
+    required.setAttribute("aria-label", `Wajib field ${index + 1}`);
+    required.onchange = () => {
+      field.required = required.checked;
+      applyCertificateFields();
+    };
+    control("Wajib diisi", required);
+    const remove = element("button", "subtle-button", "Hapus field");
+    remove.type = "button";
+    remove.disabled = certificateFields.length === 1;
+    remove.setAttribute("aria-label", `Hapus field ${index + 1}`);
+    remove.onclick = () => {
+      certificateFields.splice(index, 1);
+      applyCertificateFields();
+    };
+    card.append(
+      remove,
+      element("small", "column-key", `Key JSON: ${field.key}`),
+    );
+    list.append(card);
+  });
+  $("add-certificate-field").disabled = certificateFields.length >= 20 || busy;
+}
+$("add-certificate-field").onclick = () => {
+  if (certificateFields.length >= 20) return;
+  let number = 1;
+  while (certificateFields.some((f) => f.key === `field${number}`)) number++;
+  certificateFields.push({
+    key: `field${number}`,
+    label: `Field ${number}`,
+    type: "string",
+    required: false,
+    x: 20,
+    y: 50,
+    width: 60,
+    height: 8,
+    fontSize: 18,
+    color: "#172b4d",
+    align: "center",
+  });
+  applyCertificateFields();
+};
+$("reset-certificate-fields").onclick = () => {
+  certificateFields = structuredClone(defaultCertificateFields);
+  applyCertificateFields();
+};
 function syncReportSchema() {
   selected.schema.fields.items.items.fields = Object.fromEntries(
     reportColumns.map((c) => [
@@ -788,6 +1047,7 @@ $("background-file").onchange = async () => {
       );
     backgroundError = false;
     certificateBackground = value;
+    renderCertificateFields();
     $("background-preview").src = value;
     $("background-preview").hidden = false;
     $("background-name").textContent = file.name;
@@ -812,6 +1072,7 @@ $("background-file").onchange = async () => {
 };
 $("reset-background").onclick = () => {
   certificateBackground = undefined;
+  renderCertificateFields();
   backgroundError = false;
   $("background-error").hidden = true;
   $("background-file").value = "";

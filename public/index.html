@@ -181,8 +181,8 @@
                 >
                   <h3 id="background-title">Background sertifikat</h3>
                   <p>
-                    Gunakan desain bawaan atau pilih gambar milikmu. Teks nama,
-                    kegiatan, tanggal, dan nomor akan ditambahkan otomatis.
+                    Gunakan desain bawaan atau pilih gambar milikmu. Atur field
+                    dan posisi teks sesuai kebutuhan di bawah.
                   </p>
                   <label for="background-file"
                     >Pilih gambar PNG/JPG (maks. 5 MB)</label
@@ -215,8 +215,44 @@
                     alt="Background sertifikat yang dipilih"
                     hidden
                   />
+                  <details id="certificate-settings">
+                    <summary>Atur field dan posisi teks sertifikat</summary>
+                    <p>
+                      Tambah atau hapus field, atur judul dan tipe data. Geser
+                      kotak pada peta di bawah atau isi posisi dalam persen dari
+                      kiri atas. Kotak menunjukkan area penempatan; periksa
+                      pratinjau PDF/PNG untuk hasil teks sebenarnya.
+                    </p>
+                    <div
+                      id="certificate-layout"
+                      aria-label="Peta posisi field sertifikat"
+                    ></div>
+                    <div id="certificate-field-list"></div>
+                    <div class="background-actions">
+                      <button
+                        id="add-certificate-field"
+                        type="button"
+                        class="subtle-button"
+                      >
+                        + Tambah field</button
+                      ><button
+                        id="reset-certificate-fields"
+                        type="button"
+                        class="subtle-button"
+                      >
+                        Kembalikan field bawaan
+                      </button>
+                    </div>
+                    <p class="helper">
+                      Maksimal 20 field. Key JSON ditampilkan pada setiap field
+                      untuk impor dan batch. Menghapus field juga menghapus
+                      nilainya dari form. Pengaturan ini hanya berlaku di tab
+                      ini. Judul atau label field tidak dicetak; masukkan elemen
+                      tetap seperti judul sertifikat pada gambar background.
+                    </p>
+                  </details>
                   <details>
-                    <summary>Panduan menyiapkan desain sertifikat</summary>
+                    <summary>Panduan desain dan posisi bawaan</summary>
                     <p>
                       Gunakan A4 landscape (297 × 210 mm), misalnya 1684 × 1190
                       px atau 3508 × 2480 px (maks. 16 megapiksel). Gambar
@@ -247,8 +283,8 @@
                       Tempatkan judul, logo, bingkai, dan tanda tangan di luar
                       kotak tersebut. Gunakan warna latar terang pada area teks
                       agar tulisan gelap terbaca. Teks panjang akan diperkecil
-                      otomatis. Periksa pratinjau sebelum mencetak. Desain
-                      dengan posisi berbeda perlu disesuaikan dahulu.
+                      otomatis. Periksa pratinjau sebelum mencetak. Untuk posisi
+                      berbeda, gunakan pengaturan field di atas.
                     </p>
                     <button
                       id="download-guide"

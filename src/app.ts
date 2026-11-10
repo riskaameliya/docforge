@@ -1,3 +1,7 @@
+import {
+  certificateFieldsSchema,
+  defaultCertificateFields,
+} from "./certificate.js";
 import { reportColumnsSchema } from "./report.js";
 import Fastify from "fastify";
 import { readFile } from "node:fs/promises";
@@ -10,6 +14,7 @@ export const requestSchema = z.object({
   format: z.enum(["pdf", "png"]),
   background: backgroundSchema,
   columns: reportColumnsSchema.optional(),
+  certificateFields: certificateFieldsSchema.optional(),
   data: z.record(z.string(), z.unknown()),
 });
 export async function createApp(
@@ -91,6 +96,8 @@ export async function createApp(
       schema: t.schema,
       sampleData: t.sample,
       config: t.config,
+      certificateFields:
+        t.id === "sertifikat" ? defaultCertificateFields : undefined,
     };
   });
   app.post("/generate", { bodyLimit: 8 * 1024 * 1024 }, async (req, reply) => {
@@ -101,6 +108,7 @@ export async function createApp(
       b.data,
       b.background,
       b.columns,
+      b.certificateFields,
     );
     return reply
       .type(b.format === "pdf" ? "application/pdf" : "image/png")

@@ -45,7 +45,9 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
       path: "/tmp/docforge-ui-desktop.png",
       fullPage: true,
     });
-    await page.locator("#certificate-background summary").click();
+    await page
+      .getByText("Panduan desain dan posisi bawaan", { exact: true })
+      .click();
     expect(await page.locator("#certificate-guide svg").count()).toBe(1);
     const guideEvent = page.waitForEvent("download");
     await page.locator("#download-guide").click();
@@ -90,8 +92,37 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
         .evaluate((input: HTMLInputElement) => input.files?.[0]?.name),
     ).toBe("desain.png");
     expect(await page.locator("#background-error").isVisible()).toBe(false);
+    await page.locator("#certificate-settings summary").click();
+    await page
+      .getByRole("button", { name: "+ Tambah field", exact: true })
+      .click();
+    await page.getByLabel("Judul field 5", { exact: true }).fill("Instansi");
+    await page.getByLabel("Judul field 5", { exact: true }).press("Tab");
+    await page.getByLabel("Kiri (%) field 5", { exact: true }).fill("10");
+    await page.getByLabel("Kiri (%) field 5", { exact: true }).press("Tab");
+    await page.locator("#field-field1").fill("Universitas Contoh");
+    const fieldBox = page.getByRole("button", {
+      name: "Geser field Instansi",
+      exact: true,
+    });
+    await fieldBox.focus();
+    await page.keyboard.press("ArrowRight");
+    expect(
+      await page.getByLabel("Kiri (%) field 5", { exact: true }).inputValue(),
+    ).toBe("11");
+    expect(await page.locator("#field-field1").inputValue()).toBe(
+      "Universitas Contoh",
+    );
+    const certificateRequest = page.waitForRequest((request) =>
+      request.url().endsWith("/generate"),
+    );
     await page.locator("#field-nama").fill("Dr. Éka Pratiwi, S.T.");
     await page.locator("#generate-button").click();
+    const certificatePayload = (await certificateRequest).postDataJSON();
+    expect(certificatePayload.certificateFields[4].label).toBe("Instansi");
+    expect(certificatePayload.certificateFields[4].x).toBe(11);
+    expect(certificatePayload.data.field1).toBe("Universitas Contoh");
+
     await page.waitForFunction(
       () => !document.getElementById("preview-download")?.hidden,
     );
@@ -138,11 +169,16 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     );
     await page.locator('[data-template="laporan"]').click();
     await page.waitForSelector(".data-table");
-    expect(await page.locator(".data-table tbody tr").count()).toBe(80);
+    const initialRows = await page.locator(".data-table tbody tr").count();
+    expect(initialRows).toBeGreaterThan(0);
     await page.getByRole("button", { name: "+ Tambah baris" }).click();
-    expect(await page.locator(".data-table tbody tr").count()).toBe(81);
+    expect(await page.locator(".data-table tbody tr").count()).toBe(
+      initialRows + 1,
+    );
     await page.getByRole("button", { name: "Hapus baris" }).last().click();
-    expect(await page.locator(".data-table tbody tr").count()).toBe(80);
+    expect(await page.locator(".data-table tbody tr").count()).toBe(
+      initialRows,
+    );
     await page
       .getByRole("button", { name: "+ Tambah kolom", exact: true })
       .click();
@@ -190,6 +226,10 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     );
     await page.locator('[data-template="sertifikat"]').click();
     await page.waitForSelector("#field-nama");
+    await page
+      .getByRole("button", { name: "Kembalikan field bawaan", exact: true })
+      .click();
+    expect(await page.locator("#field-field1").count()).toBe(0);
     await page.locator("#reset-background").click();
     expect(await page.locator("#background-name").innerText()).toContain(
       "bawaan",

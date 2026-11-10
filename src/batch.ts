@@ -1,3 +1,4 @@
+import { certificateFieldsSchema } from "./certificate.js";
 import { reportColumnsSchema } from "./report.js";
 import { zipSync } from "fflate";
 import { z } from "zod";
@@ -15,6 +16,7 @@ export const batchSchema = (limit: number) =>
     data: z.array(z.record(z.string(), z.unknown())).min(1).max(limit),
     background: backgroundSchema,
     columns: reportColumnsSchema.optional(),
+    certificateFields: certificateFieldsSchema.optional(),
     filenameField: z.string().max(100).optional(),
   });
 export type BatchInput = z.infer<ReturnType<typeof batchSchema>>;
@@ -40,6 +42,8 @@ export async function processBatch(
     throw new ApiError(422, "Background khusus hanya untuk sertifikat");
   if (input.columns && input.template !== "laporan")
     throw new ApiError(422, "Kolom khusus hanya untuk laporan");
+  if (input.certificateFields && input.template !== "sertifikat")
+    throw new ApiError(422, "Field khusus hanya untuk sertifikat");
   const files: Record<string, Uint8Array> = {};
   const result: BatchResult = {
     total: input.data.length,
@@ -59,6 +63,7 @@ export async function processBatch(
         data,
         input.background,
         input.columns,
+        input.certificateFields,
       );
     } catch (error) {
       if (!(error instanceof ApiError) || error.statusCode !== 422) throw error;
