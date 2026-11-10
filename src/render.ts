@@ -1,3 +1,4 @@
+import { defaultLetterFields } from "./letter.js";
 import {
   certificateFieldsSchema,
   type CertificateField,
@@ -62,6 +63,7 @@ export class Renderer {
     background?: string,
     columns?: ReportColumn[],
     certificateFields?: CertificateField[],
+    letterFields?: CertificateField[],
   ) {
     const t = await this.templates.load(id);
     if (columns && id !== "laporan")
@@ -90,6 +92,23 @@ export class Renderer {
         },
       };
     }
+    if (letterFields && id !== "surat-resmi")
+      throw new ApiError(422, "Field surat hanya untuk surat resmi");
+    const letterOverlay =
+      id === "surat-resmi" && (!!letterFields || !!background);
+    if (letterOverlay)
+      letterFields = certificateFieldsSchema.parse(
+        letterFields ?? defaultLetterFields,
+      );
+    if (letterFields)
+      t.schema = {
+        fields: Object.fromEntries(
+          letterFields.map((f) => [
+            f.key,
+            { type: f.type, required: f.required },
+          ]),
+        ),
+      };
     if (certificateFields) {
       if (id !== "sertifikat")
         throw new ApiError(422, "Field khusus hanya untuk sertifikat");
@@ -118,10 +137,13 @@ export class Renderer {
           ),
         }
       : valid;
-    if (background && id !== "sertifikat")
-      throw new ApiError(422, "Background khusus hanya untuk sertifikat");
+    if (background && !["sertifikat", "surat-resmi"].includes(id))
+      throw new ApiError(
+        422,
+        "Background khusus hanya untuk sertifikat atau surat",
+      );
     return this.limiter.run(async () => {
-      if (t.config.type === "overlay") {
+      if (t.config.type === "overlay" || letterOverlay) {
         const { renderOverlay } = await import("./overlay.js");
         return renderOverlay(
           t,
@@ -129,7 +151,7 @@ export class Renderer {
           valid,
           this,
           background,
-          certificateFields,
+          letterOverlay ? letterFields : certificateFields,
         );
       }
       return this.html(t, format, renderData);

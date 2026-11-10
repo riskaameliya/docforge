@@ -1,3 +1,4 @@
+import { defaultLetterFields } from "./letter.js";
 import {
   certificateFieldsSchema,
   defaultCertificateFields,
@@ -15,6 +16,7 @@ export const requestSchema = z.object({
   background: backgroundSchema,
   columns: reportColumnsSchema.optional(),
   certificateFields: certificateFieldsSchema.optional(),
+  letterFields: certificateFieldsSchema.optional(),
   data: z.record(z.string(), z.unknown()),
 });
 export async function createApp(
@@ -96,6 +98,7 @@ export async function createApp(
       schema: t.schema,
       sampleData: t.sample,
       config: t.config,
+      letterFields: t.id === "surat-resmi" ? defaultLetterFields : undefined,
       certificateFields:
         t.id === "sertifikat" ? defaultCertificateFields : undefined,
     };
@@ -109,6 +112,7 @@ export async function createApp(
       b.background,
       b.columns,
       b.certificateFields,
+      b.letterFields,
     );
     return reply
       .type(b.format === "pdf" ? "application/pdf" : "image/png")

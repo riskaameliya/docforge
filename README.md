@@ -208,3 +208,15 @@ API generate dan batch menerima `certificateFields` opsional, khusus template `s
 ```
 
 Data contohnya `{"instansi":"Universitas Contoh"}`. Font memakai Noto Sans bawaan dengan wrap dan auto-shrink; font minimum 6 pt. Field wajib divalidasi terhadap data. Pada batch, pengaturan yang sama berlaku pada semua dokumen. Pengaturan hanya berada di tab browser dan permintaan, tanpa mengubah template atau menyimpan data ke server.
+
+## Surat dengan kop atau template sendiri
+
+Pada **Surat resmi**, aktifkan **Gunakan kop/template sendiri dan atur posisi isi**. Mode custom memakai A4 portrait (595 × 842 pt). Unggah PNG/JPG atau PDF satu halaman, maksimal 5 MB. Kop berupa gambar pendek ditempatkan di atas halaman; template penuh ditempatkan utuh tanpa dipotong. File Word perlu diekspor ke PDF terlebih dahulu.
+
+PDF dirasterisasi lokal di browser menjadi gambar sebelum dikirim. Template beberapa halaman dan PDF berpassword ditolak dengan pesan pada upload. Isi tetap, kop, logo, dan tanda tangan yang sudah ada pada gambar dipertahankan. Field dinamis ditambahkan di atasnya; hapus isi contoh pada template terlebih dahulu agar tidak bertumpuk.
+
+Buka **Atur field dan posisi isi surat** untuk menggeser field, mengubah ukurannya, menambah/menghapus field, dan mengatur font/warna/perataan. Label field hanya judul input, bukan teks yang dicetak. Tanpa upload, mode custom memakai halaman putih. Pengaturan surat dan sertifikat terpisah di tab browser dan tidak mengubah template server.
+
+Mode custom berupa satu halaman dengan area teks tetap dan auto-shrink; isi yang masih tidak muat pada font minimum ditolak. Untuk surat panjang dengan alur teks dan pergantian halaman otomatis, nonaktifkan mode custom untuk kembali ke format HTML bawaan.
+
+API `/generate` dan `/generate/batch` menerima `letterFields` untuk `surat-resmi`, dengan struktur yang sama seperti `certificateFields`, serta `background` berupa data URI PNG/JPEG opsional. Jika hanya background dikirim, field surat bawaan dipakai. Hasil langsung dikirim sebagai PDF/PNG/ZIP tanpa arsip di server.

@@ -243,7 +243,7 @@ test("uploaded certificate background stays request-local, validates images and 
         ).statusCode,
       ).toBe(422);
     }
-    const other = await r.templates.load("surat-resmi");
+    const other = await r.templates.load("laporan");
     expect(
       (
         await app.inject({

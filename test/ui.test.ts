@@ -167,6 +167,61 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
         (document.getElementById("field-penerima") as HTMLInputElement)
           ?.value === "Siti",
     );
+    await page.locator("#letter-custom-mode").check();
+    expect(await page.locator("#certificate-background").isVisible()).toBe(
+      true,
+    );
+    expect(await page.locator("#background-name").innerText()).toContain(
+      "Halaman putih",
+    );
+    const multipage = await (await import("pdf-lib")).PDFDocument.create();
+    multipage.addPage([595, 842]);
+    multipage.addPage([595, 842]);
+    await page.locator("#background-file").setInputFiles({
+      name: "dua-halaman.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from(await multipage.save()),
+    });
+    await page.waitForFunction(
+      () => !document.getElementById("background-error")?.hidden,
+    );
+    expect(await page.locator("#background-error").innerText()).toContain(
+      "satu halaman",
+    );
+    expect(await page.locator("#generate-button").isDisabled()).toBe(true);
+    const letterDoc = await (await import("pdf-lib")).PDFDocument.create();
+    const letterPage = letterDoc.addPage([595, 842]);
+    letterPage.drawText("KOP ORGANISASI", { x: 50, y: 780 });
+    await page.locator("#background-file").setInputFiles({
+      name: "kop.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from(await letterDoc.save()),
+    });
+    await page.waitForFunction(
+      () =>
+        document.getElementById("background-name")?.textContent === "kop.pdf",
+    );
+    expect(await page.locator("#background-preview").isVisible()).toBe(true);
+    await page
+      .locator("#certificate-settings")
+      .evaluate((details: HTMLDetailsElement) => (details.open = true));
+    await page.getByLabel("Atas (%) field 4", { exact: true }).fill("40");
+    await page.getByLabel("Atas (%) field 4", { exact: true }).press("Tab");
+    const letterRequest = page.waitForRequest((request) =>
+      request.url().endsWith("/generate"),
+    );
+    await page.locator("#generate-button").click();
+    const letterPayload = (await letterRequest).postDataJSON();
+    expect(letterPayload.letterFields[3].y).toBe(40);
+    expect(letterPayload.background).toMatch(/^data:image\/jpeg;base64,/);
+    expect(letterPayload.certificateFields).toBeUndefined();
+    await page.waitForFunction(
+      () => !document.getElementById("preview-download")?.hidden,
+    );
+    await page.locator("#letter-custom-mode").uncheck();
+    expect(await page.locator("#certificate-background").isVisible()).toBe(
+      false,
+    );
     await page.locator('[data-template="laporan"]').click();
     await page.waitForSelector(".data-table");
     const initialRows = await page.locator(".data-table tbody tr").count();
@@ -226,6 +281,10 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     );
     await page.locator('[data-template="sertifikat"]').click();
     await page.waitForSelector("#field-nama");
+    expect(await page.locator("#background-name").innerText()).toBe(
+      "desain.png",
+    );
+    expect(await page.locator("#field-field1").count()).toBe(1);
     await page
       .getByRole("button", { name: "Kembalikan field bawaan", exact: true })
       .click();

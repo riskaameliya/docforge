@@ -17,6 +17,7 @@ export const batchSchema = (limit: number) =>
     background: backgroundSchema,
     columns: reportColumnsSchema.optional(),
     certificateFields: certificateFieldsSchema.optional(),
+    letterFields: certificateFieldsSchema.optional(),
     filenameField: z.string().max(100).optional(),
   });
 export type BatchInput = z.infer<ReturnType<typeof batchSchema>>;
@@ -38,12 +39,20 @@ export async function processBatch(
   renderer: Renderer,
 ): Promise<Buffer> {
   await renderer.templates.load(input.template);
-  if (input.background && input.template !== "sertifikat")
-    throw new ApiError(422, "Background khusus hanya untuk sertifikat");
+  if (
+    input.background &&
+    !["sertifikat", "surat-resmi"].includes(input.template)
+  )
+    throw new ApiError(
+      422,
+      "Background khusus hanya untuk sertifikat atau surat",
+    );
   if (input.columns && input.template !== "laporan")
     throw new ApiError(422, "Kolom khusus hanya untuk laporan");
   if (input.certificateFields && input.template !== "sertifikat")
     throw new ApiError(422, "Field khusus hanya untuk sertifikat");
+  if (input.letterFields && input.template !== "surat-resmi")
+    throw new ApiError(422, "Field surat hanya untuk surat resmi");
   const files: Record<string, Uint8Array> = {};
   const result: BatchResult = {
     total: input.data.length,
@@ -64,6 +73,7 @@ export async function processBatch(
         input.background,
         input.columns,
         input.certificateFields,
+        input.letterFields,
       );
     } catch (error) {
       if (!(error instanceof ApiError) || error.statusCode !== 422) throw error;

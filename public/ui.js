@@ -1,3 +1,11 @@
+const overlayStates = {};
+let originalLetterSchema;
+function usesOverlay() {
+  return (
+    selected?.id === "sertifikat" ||
+    (selected?.id === "surat-resmi" && $("letter-custom-mode").checked)
+  );
+}
 let certificateFields;
 let defaultCertificateFields;
 const defaultReportColumns = [
@@ -76,6 +84,7 @@ function resetOutput() {
 function setBusy(value) {
   busy = value;
   $("background-file").disabled = value;
+  $("letter-custom-mode").disabled = value;
   $("certificate-settings")
     .querySelectorAll("input, select, button")
     .forEach((control) => (control.disabled = value));
@@ -87,10 +96,7 @@ function setBusy(value) {
   if (!value) renderReportColumns();
   $("reset-background").disabled = value;
   $("generate-button").disabled =
-    value ||
-    !selected ||
-    !connected ||
-    (selected.id === "sertifikat" && backgroundError);
+    value || !selected || !connected || (usesOverlay() && backgroundError);
   $("sample-button").disabled = value || !selected;
   $("upload-button").disabled = value || !selected;
   document
@@ -197,16 +203,81 @@ async function selectTemplate(id) {
     await request(`/templates/${encodeURIComponent(id)}`)
   ).json();
   if (version !== selectionVersion) return;
+  if (selected && ["sertifikat", "surat-resmi"].includes(selected.id)) {
+    overlayStates[selected.id] = {
+      fields: certificateFields,
+      background: certificateBackground,
+      error: backgroundError,
+      name: $("background-name").textContent,
+      message: $("background-error").textContent,
+    };
+  }
   selected = template;
+  $("letter-options").hidden = id !== "surat-resmi";
+  if (id === "surat-resmi")
+    originalLetterSchema = structuredClone(template.schema);
   $("report-columns").hidden = id !== "laporan";
   if (id === "laporan") syncReportSchema();
-  if (id === "sertifikat") {
-    defaultCertificateFields = structuredClone(template.certificateFields);
-    certificateFields ??= structuredClone(defaultCertificateFields);
-    syncCertificateSchema();
+  if (["sertifikat", "surat-resmi"].includes(id)) {
+    const state = overlayStates[id];
+    defaultCertificateFields = structuredClone(
+      id === "sertifikat" ? template.certificateFields : template.letterFields,
+    );
+    certificateFields =
+      state?.fields ?? structuredClone(defaultCertificateFields);
+    certificateBackground = state?.background;
+    backgroundError = state?.error ?? false;
+    $("background-name").textContent =
+      state?.name ??
+      (id === "surat-resmi"
+        ? "Halaman putih tanpa kop"
+        : "Menggunakan desain bawaan");
+    $("background-error").textContent = state?.message ?? "";
+    $("background-error").hidden = !backgroundError;
+    $("background-file").value = "";
+    $("background-preview").hidden = !certificateBackground;
+    if (certificateBackground)
+      $("background-preview").src = certificateBackground;
+    else $("background-preview").removeAttribute("src");
+    $("reset-background").hidden = !certificateBackground && !backgroundError;
+    if (usesOverlay()) syncCertificateSchema();
     renderCertificateFields();
+    const letter = id === "surat-resmi";
+    $("background-description").textContent = letter
+      ? "Unggah kop saja atau template A4 portrait tanpa isi dinamis. Gambar kop ditempatkan di atas halaman. Atur field di bawah untuk mengisi bagian kosong; elemen yang sudah ada pada gambar tidak dihapus."
+      : "Gunakan desain bawaan atau pilih gambar milikmu. Atur field dan posisi teks sesuai kebutuhan di bawah.";
+    $("background-preview").style.objectPosition = letter ? "top" : "center";
+    $("background-preview").alt = letter
+      ? "Kop atau template surat yang dipilih"
+      : "Background sertifikat yang dipilih";
+    $("certificate-layout").setAttribute(
+      "aria-label",
+      letter ? "Peta posisi isi surat" : "Peta posisi field sertifikat",
+    );
+    $("background-title").textContent = letter
+      ? "Kop/template dan isi surat"
+      : "Background sertifikat";
+    $("background-file-label").textContent = letter
+      ? "Pilih kop/template PNG, JPG, atau PDF satu halaman (maks. 5 MB)"
+      : "Pilih gambar PNG/JPG (maks. 5 MB)";
+    $("background-file").accept = letter
+      ? "image/png,image/jpeg,application/pdf"
+      : "image/png,image/jpeg";
+    $("layout-settings-title").textContent = letter
+      ? "Atur field dan posisi isi surat"
+      : "Atur field dan posisi teks sertifikat";
+    $("default-certificate-guide").hidden = letter;
+    $("certificate-layout").style.aspectRatio = letter
+      ? "595 / 842"
+      : "842 / 595";
+    $("background-preview").style.aspectRatio = letter
+      ? "595 / 842"
+      : "842 / 595";
+    $("reset-background").textContent = letter
+      ? "Hapus kop/template"
+      : "Gunakan desain bawaan";
   }
-  $("certificate-background").hidden = id !== "sertifikat";
+  $("certificate-background").hidden = !usesOverlay();
   resetOutput();
   showNotice("");
   document.querySelectorAll(".template-card").forEach((card) => {
@@ -512,7 +583,7 @@ function showOutput(blob, format) {
 $("document-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (busy || !selected) return;
-  if (selected.id === "sertifikat" && backgroundError) return;
+  if (usesOverlay() && backgroundError) return;
   clearErrors();
   showNotice("");
   const format = document.querySelector('input[name="format"]:checked').value;
@@ -532,11 +603,14 @@ $("document-form").addEventListener("submit", async (event) => {
         template: selected.id,
         format,
         data,
+        letterFields:
+          selected.id === "surat-resmi" && usesOverlay()
+            ? certificateFields
+            : undefined,
         certificateFields:
           selected.id === "sertifikat" ? certificateFields : undefined,
         columns: selected.id === "laporan" ? reportColumns : undefined,
-        background:
-          selected.id === "sertifikat" ? certificateBackground : undefined,
+        background: usesOverlay() ? certificateBackground : undefined,
         filenameField: $("filename-field").value || undefined,
       };
       const response = await request("/generate/batch", {
@@ -567,11 +641,14 @@ $("document-form").addEventListener("submit", async (event) => {
           template: selected.id,
           format,
           data,
+          letterFields:
+            selected.id === "surat-resmi" && usesOverlay()
+              ? certificateFields
+              : undefined,
           certificateFields:
             selected.id === "sertifikat" ? certificateFields : undefined,
           columns: selected.id === "laporan" ? reportColumns : undefined,
-          background:
-            selected.id === "sertifikat" ? certificateBackground : undefined,
+          background: usesOverlay() ? certificateBackground : undefined,
         }),
       });
       showOutput(await response.blob(), format);
@@ -641,6 +718,21 @@ $("json-file").addEventListener("change", async () => {
     $("json-file").value = "";
   }
 });
+$("letter-custom-mode").onchange = () => {
+  if (selected?.id !== "surat-resmi") return;
+  const data = Object.fromEntries(
+    [...fieldReaders].map(([name, read]) => [name, read()]),
+  );
+  const batch = $("batch-data").value;
+  selected.schema = structuredClone(originalLetterSchema);
+  if (usesOverlay()) syncCertificateSchema();
+  $("certificate-background").hidden = !usesOverlay();
+  populate(data);
+  $("batch-data").value = batch;
+  updateBatchCount();
+  resetOutput();
+  setBusy(false);
+};
 function syncCertificateSchema() {
   selected.schema.fields = Object.fromEntries(
     certificateFields.map((f) => [
@@ -650,7 +742,7 @@ function syncCertificateSchema() {
   );
 }
 function applyCertificateFields() {
-  if (selected?.id !== "sertifikat") return;
+  if (!usesOverlay()) return;
   const data = Object.fromEntries(
     [...fieldReaders].map(([name, read]) => [name, read()]),
   );
@@ -668,6 +760,8 @@ function renderCertificateFields() {
   if (certificateBackground) {
     const image = element("img");
     image.src = certificateBackground;
+    image.style.objectPosition =
+      selected?.id === "surat-resmi" ? "top" : "center";
     image.alt = "Background dan peta posisi";
     stage.append(image);
   } else
@@ -1024,16 +1118,65 @@ $("background-file").onchange = async () => {
   $("background-error").hidden = true;
   try {
     if (
-      !["image/png", "image/jpeg"].includes(file.type) ||
+      ![
+        "image/png",
+        "image/jpeg",
+        ...(selected.id === "surat-resmi" ? ["application/pdf"] : []),
+      ].includes(file.type) ||
       file.size > 5 * 1024 * 1024
     )
-      throw new Error("Pilih PNG/JPG maksimal 5 MB.");
-    const value = await new Promise((resolve, reject) => {
+      throw new Error("Pilih format yang didukung, maksimal 5 MB.");
+    let value = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.onerror = () => reject(new Error("Gambar belum dapat dibaca."));
       reader.readAsDataURL(file);
     });
+    if (file.type === "application/pdf") {
+      const pdfjs = await import("/editor-vendor/pdf.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "/editor-vendor/pdf.worker.mjs";
+      const task = pdfjs.getDocument({
+        data: new Uint8Array(await file.arrayBuffer()),
+        isEvalSupported: false,
+      });
+      let protectedPdf = false;
+      task.onPassword = () => {
+        protectedPdf = true;
+        void task.destroy();
+      };
+      try {
+        const pdf = await task.promise;
+        if (pdf.numPages !== 1)
+          throw new Error(
+            "Gunakan PDF satu halaman. Mode custom surat belum mendukung template beberapa halaman.",
+          );
+        const page = await pdf.getPage(1),
+          base = page.getViewport({ scale: 1 });
+        if (
+          base.width <= 0 ||
+          base.height <= 0 ||
+          base.width > 5000 ||
+          base.height > 5000
+        )
+          throw new Error("Ukuran halaman PDF tidak didukung.");
+        const viewport = page.getViewport({
+          scale: Math.min(2, Math.sqrt(4000000 / (base.width * base.height))),
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport })
+          .promise;
+        value = canvas.toDataURL("image/jpeg", 0.95);
+        canvas.width = canvas.height = 0;
+      } catch (error) {
+        if (protectedPdf)
+          throw new Error("Buka proteksi kata sandi PDF terlebih dahulu.");
+        throw error;
+      } finally {
+        await task.destroy().catch(() => {});
+      }
+    }
     const image = new Image();
     image.src = value;
     await image.decode().catch(() => {
@@ -1078,7 +1221,10 @@ $("reset-background").onclick = () => {
   $("background-file").value = "";
   $("background-preview").removeAttribute("src");
   $("background-preview").hidden = true;
-  $("background-name").textContent = "Menggunakan desain bawaan";
+  $("background-name").textContent =
+    selected.id === "surat-resmi"
+      ? "Halaman putih tanpa kop"
+      : "Menggunakan desain bawaan";
   $("reset-background").hidden = true;
   resetOutput();
   showNotice("");

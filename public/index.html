@@ -174,23 +174,40 @@
                   </p>
                 </section>
                 <section
+                  id="letter-options"
+                  class="certificate-background"
+                  hidden
+                >
+                  <h3>Layout surat resmi</h3>
+                  <label
+                    ><input id="letter-custom-mode" type="checkbox" /> Gunakan
+                    kop/template sendiri dan atur posisi isi</label
+                  >
+                  <p>
+                    Mode bawaan mengatur alur teks dan halaman otomatis. Mode
+                    custom memakai satu halaman A4 portrait: unggah PNG/JPG atau
+                    PDF satu halaman berisi kop dan desain tetap, lalu atur
+                    field isinya. File Word dapat diekspor ke PDF dahulu.
+                  </p>
+                </section>
+                <section
                   id="certificate-background"
                   class="certificate-background"
                   hidden
                   aria-labelledby="background-title"
                 >
                   <h3 id="background-title">Background sertifikat</h3>
-                  <p>
+                  <p id="background-description">
                     Gunakan desain bawaan atau pilih gambar milikmu. Atur field
                     dan posisi teks sesuai kebutuhan di bawah.
                   </p>
-                  <label for="background-file"
+                  <label id="background-file-label" for="background-file"
                     >Pilih gambar PNG/JPG (maks. 5 MB)</label
                   >
                   <input
                     id="background-file"
                     type="file"
-                    accept="image/png,image/jpeg"
+                    accept="image/png,image/jpeg,application/pdf"
                   />
                   <p
                     id="background-error"
@@ -216,7 +233,9 @@
                     hidden
                   />
                   <details id="certificate-settings">
-                    <summary>Atur field dan posisi teks sertifikat</summary>
+                    <summary id="layout-settings-title">
+                      Atur field dan posisi teks sertifikat
+                    </summary>
                     <p>
                       Tambah atau hapus field, atur judul dan tipe data. Geser
                       kotak pada peta di bawah atau isi posisi dalam persen dari
@@ -248,10 +267,10 @@
                       untuk impor dan batch. Menghapus field juga menghapus
                       nilainya dari form. Pengaturan ini hanya berlaku di tab
                       ini. Judul atau label field tidak dicetak; masukkan elemen
-                      tetap seperti judul sertifikat pada gambar background.
+                      tetap seperti judul dokumen pada gambar background.
                     </p>
                   </details>
-                  <details>
+                  <details id="default-certificate-guide">
                     <summary>Panduan desain dan posisi bawaan</summary>
                     <p>
                       Gunakan A4 landscape (297 × 210 mm), misalnya 1684 × 1190
