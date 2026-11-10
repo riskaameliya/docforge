@@ -180,7 +180,7 @@ Data baris contohnya `{"produk":"Buku","harga":12500}` di dalam `items`. Tipe ya
 
 ## Field dan posisi sertifikat custom
 
-Buka **Atur field dan posisi teks sertifikat**. Tambahkan atau hapus field (1–20), ubah label, tipe data (teks/angka/tanggal), status wajib, ukuran font, warna, dan perataan. Geser kotak pada peta background menggunakan mouse/sentuhan atau tombol panah (1% per langkah). Posisi kiri/atas serta lebar/tinggi memakai persen dari halaman A4; kotak dibatasi di dalam halaman. Peta menunjukkan area field, sementara hasil tipografi sebenarnya diperiksa melalui PDF/PNG. Tanpa gambar upload, peta memakai latar kosong untuk acuan posisi.
+Buka **Edit desain sertifikat**. Tambahkan atau hapus field (1–20), ubah label, tipe data (teks/angka/tanggal), status wajib, ukuran font, warna, dan perataan. Geser kotak pada peta background menggunakan mouse/sentuhan atau tombol panah (1% per langkah). Posisi kiri/atas serta lebar/tinggi memakai persen dari halaman A4; kotak dibatasi di dalam halaman. Peta menunjukkan area field, sementara hasil tipografi sebenarnya diperiksa melalui PDF/PNG. Tanpa gambar upload, kanvas menampilkan background sertifikat bawaan sebagai acuan posisi.
 
 Label field adalah judul input, bukan teks yang dicetak. Elemen tetap yang sudah menyatu dengan background bawaan tidak dapat dihapus lewat pengaturan field; unggah background sendiri untuk menggantinya. Field bawaan dapat dikembalikan dengan tombol **Kembalikan field bawaan**. Menghapus field menghapus nilainya dari form; mengubah tipe dapat mengosongkan nilai yang tidak cocok.
 
@@ -208,12 +208,18 @@ Data contohnya `{"instansi":"Universitas Contoh"}`. Font memakai Noto Sans bawaa
 
 ## Surat dengan kop atau template sendiri
 
-Pada **Surat resmi**, aktifkan **Gunakan kop/template sendiri dan atur posisi isi**. Mode custom memakai A4 portrait (595 × 842 pt). Unggah PNG/JPG atau PDF satu halaman, maksimal 5 MB. Kop berupa gambar pendek ditempatkan di atas halaman; template penuh ditempatkan utuh tanpa dipotong. File Word perlu diekspor ke PDF terlebih dahulu.
+Pada **Surat resmi**, pilih **Edit desain surat** untuk langsung membuka editor dan mengaktifkan layout custom. Mode custom memakai A4 portrait (595 × 842 pt). Unggah PNG/JPG atau PDF satu halaman, maksimal 5 MB. Kop berupa gambar pendek ditempatkan di atas halaman; template penuh ditempatkan utuh tanpa dipotong. File Word perlu diekspor ke PDF terlebih dahulu.
 
 PDF dirasterisasi lokal di browser menjadi gambar sebelum dikirim. Template beberapa halaman dan PDF berpassword ditolak dengan pesan pada upload. Isi tetap, kop, logo, dan tanda tangan yang sudah ada pada gambar dipertahankan. Field dinamis ditambahkan di atasnya; hapus isi contoh pada template terlebih dahulu agar tidak bertumpuk.
 
-Buka **Atur field dan posisi isi surat** untuk menggeser field, mengubah ukurannya, menambah/menghapus field, dan mengatur font/warna/perataan. Label field hanya judul input, bukan teks yang dicetak. Tanpa upload, mode custom memakai halaman putih. Pengaturan surat dan sertifikat terpisah di tab browser dan tidak mengubah template server.
+Buka **Edit desain surat** untuk menggeser field, mengubah ukurannya, menambah/menghapus field, dan mengatur font/warna/perataan. Label field hanya judul input, bukan teks yang dicetak. Tanpa upload, mode custom memakai halaman putih. Pengaturan surat dan sertifikat terpisah di tab browser dan tidak mengubah template server.
 
 Mode custom berupa satu halaman dengan area teks tetap dan auto-shrink; isi yang masih tidak muat pada font minimum ditolak. Untuk surat panjang dengan alur teks dan pergantian halaman otomatis, nonaktifkan mode custom untuk kembali ke format HTML bawaan.
 
 API `/generate` dan `/generate/batch` menerima `letterFields` untuk `surat-resmi`, dengan struktur yang sama seperti `certificateFields`, serta `background` berupa data URI PNG/JPEG opsional. Jika hanya background dikirim, field surat bawaan dipakai. Hasil langsung dikirim sebagai PDF/PNG/ZIP tanpa arsip di server.
+
+## Editor desain dalam satu layar
+
+Pada Sertifikat, pilih **Edit desain sertifikat**. Untuk surat, pilih **Edit desain surat** untuk langsung membuka editor yang sama dalam ukuran A4 portrait. Mode custom aktif saat membuka editor; nonaktifkan opsi **Gunakan layout custom satu halaman** di dalam editor untuk kembali ke format bawaan. Editor membuka kanvas besar dengan panel properti di samping. Pilih field langsung di kanvas atau dari daftar nama; hanya properti field tersebut yang ditampilkan. Geser kotak untuk memindahkan, tarik sudut kanan bawah untuk mengubah ukuran, atau gunakan panah (geser) dan Shift + panah (ubah ukuran).
+
+Upload background dan reset tersedia di toolbar. Sertifikat bawaan juga ditampilkan pada kanvas sebagai acuan. Kanvas tetap terlihat saat properti atau panduan di panel samping di-scroll. Pada ponsel kanvas berada di atas panel properti dengan tinggi yang mengikuti layar. Perubahan diterapkan langsung ke form; tombol **Selesai** atau Escape menutup editor. Periksa hasil PDF/PNG setelah mengatur desain. Editor ini bagian dari form, tanpa halaman editor terpisah atau penyimpanan desain ke server.

@@ -41,7 +41,7 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     expect(await page.locator("#api-key").count()).toBe(0);
     expect(await page.locator(".template-card").count()).toBe(3);
     expect(await page.locator("#field-nama").inputValue()).toContain("Siti");
-    await page.locator("#document-settings > summary").click();
+    await page.locator("#open-layout-editor").click();
     await page.screenshot({
       path: "/tmp/docforge-ui-desktop.png",
       fullPage: true,
@@ -93,7 +93,6 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
         .evaluate((input: HTMLInputElement) => input.files?.[0]?.name),
     ).toBe("desain.png");
     expect(await page.locator("#background-error").isVisible()).toBe(false);
-    await page.locator("#certificate-settings summary").click();
     await page
       .getByRole("button", { name: "+ Tambah field", exact: true })
       .click();
@@ -101,7 +100,7 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     await page.getByLabel("Judul field 5", { exact: true }).press("Tab");
     await page.getByLabel("Kiri (%) field 5", { exact: true }).fill("10");
     await page.getByLabel("Kiri (%) field 5", { exact: true }).press("Tab");
-    await page.locator("#field-field1").fill("Universitas Contoh");
+
     const fieldBox = page.getByRole("button", {
       name: "Geser field Instansi",
       exact: true,
@@ -111,9 +110,17 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     expect(
       await page.getByLabel("Kiri (%) field 5", { exact: true }).inputValue(),
     ).toBe("11");
-    expect(await page.locator("#field-field1").inputValue()).toBe(
-      "Universitas Contoh",
-    );
+    await page.keyboard.press("Shift+ArrowRight");
+    expect(
+      await page.getByLabel("Lebar (%) field 5", { exact: true }).inputValue(),
+    ).toBe("61");
+    const canvasBounds = await page
+      .locator("#certificate-layout")
+      .boundingBox();
+    expect(canvasBounds!.y).toBeGreaterThanOrEqual(0);
+    expect(canvasBounds!.y + canvasBounds!.height).toBeLessThanOrEqual(1100);
+    await page.locator("#close-layout-editor").click();
+    await page.locator("#field-field1").fill("Universitas Contoh");
     const certificateRequest = page.waitForRequest((request) =>
       request.url().endsWith("/generate"),
     );
@@ -168,7 +175,9 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
         (document.getElementById("field-penerima") as HTMLInputElement)
           ?.value === "Siti",
     );
-    await page.locator("#letter-custom-mode").check();
+    expect(await page.locator("#document-settings").isVisible()).toBe(false);
+    await page.getByRole("button", { name: /Edit desain surat/ }).click();
+    expect(await page.locator("#letter-custom-mode").isChecked()).toBe(true);
     expect(await page.locator("#certificate-background").isVisible()).toBe(
       true,
     );
@@ -204,10 +213,11 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     );
     expect(await page.locator("#background-preview").isVisible()).toBe(true);
     await page
-      .locator("#certificate-settings")
-      .evaluate((details: HTMLDetailsElement) => (details.open = true));
+      .getByRole("button", { name: "Pilih field Isi", exact: true })
+      .click();
     await page.getByLabel("Atas (%) field 4", { exact: true }).fill("40");
     await page.getByLabel("Atas (%) field 4", { exact: true }).press("Tab");
+    await page.locator("#close-layout-editor").click();
     const letterRequest = page.waitForRequest((request) =>
       request.url().endsWith("/generate"),
     );
@@ -219,12 +229,15 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     await page.waitForFunction(
       () => !document.getElementById("preview-download")?.hidden,
     );
+    await page.locator("#open-layout-editor").click();
     await page.locator("#letter-custom-mode").uncheck();
+    await page.locator("#close-layout-editor").click();
     expect(await page.locator("#certificate-background").isVisible()).toBe(
       false,
     );
     await page.locator('[data-template="laporan"]').click();
     await page.waitForSelector(".data-table");
+    await page.locator("#document-settings > summary").click();
     const initialRows = await page.locator(".data-table tbody tr").count();
     expect(initialRows).toBeGreaterThan(0);
     await page.getByRole("button", { name: "+ Tambah baris" }).click();
@@ -282,6 +295,7 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     );
     await page.locator('[data-template="sertifikat"]').click();
     await page.waitForSelector("#field-nama");
+    await page.locator("#open-layout-editor").click();
     expect(await page.locator("#background-name").innerText()).toBe(
       "desain.png",
     );
@@ -294,6 +308,7 @@ test("browser: public access, form, PDF/PNG preview and download, import, batch 
     expect(await page.locator("#background-name").innerText()).toContain(
       "bawaan",
     );
+    await page.locator("#close-layout-editor").click();
     await page.locator("#field-nama").fill("");
     await page.locator("#mode-batch").click();
     const zip = zipSync({ "report.json": Buffer.from('{"succeeded":1}') });

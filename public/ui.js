@@ -1,3 +1,5 @@
+let activeCertificateKey;
+let defaultBackgroundPreview;
 const overlayStates = {};
 let originalLetterSchema;
 function usesOverlay() {
@@ -76,6 +78,8 @@ function setBusy(value) {
   busy = value;
   document.body.classList.toggle("is-processing", value);
   $("background-file").disabled = value;
+  $("open-layout-editor").disabled = value;
+  $("close-layout-editor").disabled = value;
   $("letter-custom-mode").disabled = value;
   $("certificate-settings")
     .querySelectorAll("input, select, button")
@@ -238,9 +242,16 @@ async function selectTemplate(id) {
     if (usesOverlay()) syncCertificateSchema();
     renderCertificateFields();
     const letter = id === "surat-resmi";
+    $("layout-launcher-title").textContent = letter
+      ? "Edit desain surat"
+      : "Edit desain sertifikat";
+    $("layout-dialog-title").textContent = letter
+      ? "Desain surat resmi"
+      : "Desain sertifikat";
+    $("layout-page-size").textContent = letter ? "A4 portrait" : "A4 landscape";
     $("background-description").textContent = letter
-      ? "Unggah kop saja atau template A4 portrait tanpa isi dinamis. Gambar kop ditempatkan di atas halaman. Atur field di bawah untuk mengisi bagian kosong; elemen yang sudah ada pada gambar tidak dihapus."
-      : "Gunakan desain bawaan atau pilih gambar milikmu. Atur field dan posisi teks sesuai kebutuhan di bawah.";
+      ? "Kop ditempatkan di atas halaman. Pilih field pada kanvas untuk mengatur area isinya."
+      : "Pilih field di kanvas atau daftar di samping. Periksa hasil PDF/PNG setelah selesai mengatur desain.";
     $("background-preview").style.objectPosition = letter ? "top" : "center";
     $("background-preview").alt = letter
       ? "Kop atau template surat yang dipilih"
@@ -258,9 +269,7 @@ async function selectTemplate(id) {
     $("background-file").accept = letter
       ? "image/png,image/jpeg,application/pdf"
       : "image/png,image/jpeg";
-    $("layout-settings-title").textContent = letter
-      ? "Atur field dan posisi isi surat"
-      : "Atur field dan posisi teks sertifikat";
+    $("layout-settings-title").textContent = "Field dan posisi";
     $("default-certificate-guide").hidden = letter;
     $("certificate-layout").style.aspectRatio = letter
       ? "595 / 842"
@@ -273,6 +282,10 @@ async function selectTemplate(id) {
       : "Gunakan desain bawaan";
   }
   $("certificate-background").hidden = !usesOverlay();
+  $("open-layout-editor").hidden = !["sertifikat", "surat-resmi"].includes(
+    selected.id,
+  );
+  $("document-settings").hidden = selected.id !== "laporan";
   resetOutput();
   showNotice("");
   document.querySelectorAll(".template-card").forEach((card) => {
@@ -717,12 +730,70 @@ $("letter-custom-mode").onchange = () => {
   selected.schema = structuredClone(originalLetterSchema);
   if (usesOverlay()) syncCertificateSchema();
   $("certificate-background").hidden = !usesOverlay();
+  $("open-layout-editor").hidden = !["sertifikat", "surat-resmi"].includes(
+    selected.id,
+  );
+  $("document-settings").hidden = selected.id !== "laporan";
   populate(data);
   $("batch-data").value = batch;
   updateBatchCount();
   resetOutput();
   setBusy(false);
 };
+function fitLayoutCanvas() {
+  if (!$("layout-dialog").open) return;
+  const viewport = $("layout-canvas-viewport").getBoundingClientRect();
+  const ratio = selected?.id === "surat-resmi" ? 595 / 842 : 842 / 595;
+  const width = Math.max(
+    0,
+    Math.min(viewport.width - 40, (viewport.height - 40) * ratio),
+  );
+  $("certificate-layout").style.width = `${width}px`;
+  $("certificate-layout").style.height = `${width / ratio}px`;
+}
+new ResizeObserver(fitLayoutCanvas).observe($("layout-canvas-viewport"));
+$("open-layout-editor").onclick = async () => {
+  if (busy || !["sertifikat", "surat-resmi"].includes(selected?.id)) return;
+  if (selected.id === "surat-resmi" && !usesOverlay()) {
+    $("letter-custom-mode").checked = true;
+    $("letter-custom-mode").onchange();
+  }
+  $("layout-dialog").showModal();
+  document.body.classList.add("layout-editor-open");
+  renderCertificateFields();
+  if (selected.id === "sertifikat" && !defaultBackgroundPreview) {
+    try {
+      const bytes = await (
+        await request("/certificate-background.pdf")
+      ).arrayBuffer();
+      defaultBackgroundPreview = await pdfBackgroundToImage(bytes);
+      if (
+        $("layout-dialog").open &&
+        selected.id === "sertifikat" &&
+        !certificateBackground
+      )
+        renderCertificateFields();
+    } catch {
+      /* The position editor remains usable if the default preview cannot load. */
+    }
+  }
+};
+$("background-file-label").tabIndex = 0;
+$("background-file-label").setAttribute("role", "button");
+$("background-file").tabIndex = -1;
+$("background-file-label").onkeydown = (event) => {
+  if (!busy && ["Enter", " "].includes(event.key)) {
+    event.preventDefault();
+    $("background-file").click();
+  }
+};
+$("close-layout-editor").onclick = () => $("layout-dialog").close();
+$("layout-dialog").addEventListener("cancel", (event) => {
+  if (busy) event.preventDefault();
+});
+$("layout-dialog").addEventListener("close", () =>
+  document.body.classList.remove("layout-editor-open"),
+);
 function syncCertificateSchema() {
   selected.schema.fields = Object.fromEntries(
     certificateFields.map((f) => [
@@ -745,11 +816,16 @@ function applyCertificateFields() {
   renderCertificateFields();
 }
 function renderCertificateFields() {
+  if (!certificateFields.some((f) => f.key === activeCertificateKey))
+    activeCertificateKey = certificateFields[0]?.key;
   const stage = $("certificate-layout");
   stage.replaceChildren();
-  if (certificateBackground) {
+  if (
+    certificateBackground ||
+    (selected?.id === "sertifikat" && defaultBackgroundPreview)
+  ) {
     const image = element("img");
-    image.src = certificateBackground;
+    image.src = certificateBackground || defaultBackgroundPreview;
     image.style.objectPosition =
       selected?.id === "surat-resmi" ? "top" : "center";
     image.alt = "Background dan peta posisi";
@@ -764,8 +840,21 @@ function renderCertificateFields() {
     );
   certificateFields.forEach((field, index) => {
     const box = element("button", "certificate-field-box", field.label);
+    const resizeHandle = element("span", "layout-resize-handle");
+    resizeHandle.setAttribute("aria-hidden", "true");
+    box.append(resizeHandle);
     box.type = "button";
+    box.classList.toggle("is-selected", field.key === activeCertificateKey);
+    box.setAttribute(
+      "aria-pressed",
+      String(field.key === activeCertificateKey),
+    );
     box.setAttribute("aria-label", `Geser field ${field.label}`);
+    box.onclick = () => {
+      activeCertificateKey = field.key;
+      renderCertificateInspector();
+      updateLayoutSelection();
+    };
     function positionBox() {
       box.style.cssText = `left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;color:${field.color};`;
     }
@@ -773,13 +862,37 @@ function renderCertificateFields() {
     box.onpointerdown = (event) => {
       if (busy || event.button !== 0) return;
       event.preventDefault();
+      activeCertificateKey = field.key;
+      renderCertificateInspector();
+      updateLayoutSelection();
       box.setPointerCapture(event.pointerId);
       const rect = stage.getBoundingClientRect(),
         startX = event.clientX,
         startY = event.clientY,
         x = field.x,
-        y = field.y;
+        y = field.y,
+        width = field.width,
+        height = field.height,
+        resizing = event.target === resizeHandle;
       box.onpointermove = (move) => {
+        if (resizing) {
+          field.width = Math.max(
+            0.5,
+            Math.min(
+              100 - x,
+              width + ((move.clientX - startX) / rect.width) * 100,
+            ),
+          );
+          field.height = Math.max(
+            0.5,
+            Math.min(
+              100 - y,
+              height + ((move.clientY - startY) / rect.height) * 100,
+            ),
+          );
+          positionBox();
+          return;
+        }
         field.x = Math.max(
           0,
           Math.min(
@@ -814,7 +927,21 @@ function renderCertificateFields() {
       };
       const direction = directions[event.key];
       if (!direction) return;
+      activeCertificateKey = field.key;
       event.preventDefault();
+      if (event.shiftKey) {
+        field.width = Math.max(
+          0.5,
+          Math.min(100 - field.x, field.width + direction[0]),
+        );
+        field.height = Math.max(
+          0.5,
+          Math.min(100 - field.y, field.height + direction[1]),
+        );
+        applyCertificateFields();
+        stage.querySelectorAll("button")[index]?.focus();
+        return;
+      }
       field.x = Math.max(
         0,
         Math.min(100 - field.width, field.x + direction[0]),
@@ -828,9 +955,41 @@ function renderCertificateFields() {
     };
     stage.append(box);
   });
+  renderCertificateInspector();
+  fitLayoutCanvas();
+}
+function updateLayoutSelection() {
+  $("certificate-layout")
+    .querySelectorAll("button")
+    .forEach((box, index) => {
+      const selected = certificateFields[index].key === activeCertificateKey;
+      box.classList.toggle("is-selected", selected);
+      box.setAttribute("aria-pressed", String(selected));
+    });
+}
+function renderCertificateInspector() {
+  const picker = $("certificate-field-tabs");
+  picker.replaceChildren();
+  certificateFields.forEach((field) => {
+    const button = element("button", "layout-field-tab", field.label);
+    button.type = "button";
+    button.classList.toggle("selected", field.key === activeCertificateKey);
+    button.setAttribute("aria-label", `Pilih field ${field.label}`);
+    button.setAttribute(
+      "aria-pressed",
+      String(field.key === activeCertificateKey),
+    );
+    button.onclick = () => {
+      activeCertificateKey = field.key;
+      renderCertificateInspector();
+      updateLayoutSelection();
+    };
+    picker.append(button);
+  });
   const list = $("certificate-field-list");
   list.replaceChildren();
   certificateFields.forEach((field, index) => {
+    if (field.key !== activeCertificateKey) return;
     const card = element("div", "certificate-field-card");
     function control(label, input) {
       const wrap = element("label", "certificate-control", label);
@@ -961,6 +1120,7 @@ $("add-certificate-field").onclick = () => {
     color: "#172b4d",
     align: "center",
   });
+  activeCertificateKey = `field${number}`;
   applyCertificateFields();
 };
 $("reset-certificate-fields").onclick = () => {
@@ -1100,6 +1260,52 @@ $("download-guide").onclick = () => {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+async function pdfBackgroundToImage(bytes) {
+  const pdfjs = await import("/pdf-vendor/pdf.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf-vendor/pdf.worker.mjs";
+  const task = pdfjs.getDocument({
+    data: new Uint8Array(bytes),
+    isEvalSupported: false,
+  });
+  let protectedPdf = false;
+  task.onPassword = () => {
+    protectedPdf = true;
+    void task.destroy();
+  };
+  try {
+    const pdf = await task.promise;
+    if (pdf.numPages !== 1)
+      throw new Error(
+        "Gunakan PDF satu halaman. Mode custom surat belum mendukung template beberapa halaman.",
+      );
+    const page = await pdf.getPage(1),
+      base = page.getViewport({ scale: 1 });
+    if (
+      base.width <= 0 ||
+      base.height <= 0 ||
+      base.width > 5000 ||
+      base.height > 5000
+    )
+      throw new Error("Ukuran halaman PDF tidak didukung.");
+    const viewport = page.getViewport({
+      scale: Math.min(2, Math.sqrt(4000000 / (base.width * base.height))),
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport })
+      .promise;
+    const value = canvas.toDataURL("image/jpeg", 0.95);
+    canvas.width = canvas.height = 0;
+    return value;
+  } catch (error) {
+    if (protectedPdf)
+      throw new Error("Buka proteksi kata sandi PDF terlebih dahulu.");
+    throw error;
+  } finally {
+    await task.destroy().catch(() => {});
+  }
+}
 $("background-file").onchange = async () => {
   const file = $("background-file").files[0];
   if (!file || busy) return;
@@ -1123,49 +1329,7 @@ $("background-file").onchange = async () => {
       reader.readAsDataURL(file);
     });
     if (file.type === "application/pdf") {
-      const pdfjs = await import("/pdf-vendor/pdf.mjs");
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf-vendor/pdf.worker.mjs";
-      const task = pdfjs.getDocument({
-        data: new Uint8Array(await file.arrayBuffer()),
-        isEvalSupported: false,
-      });
-      let protectedPdf = false;
-      task.onPassword = () => {
-        protectedPdf = true;
-        void task.destroy();
-      };
-      try {
-        const pdf = await task.promise;
-        if (pdf.numPages !== 1)
-          throw new Error(
-            "Gunakan PDF satu halaman. Mode custom surat belum mendukung template beberapa halaman.",
-          );
-        const page = await pdf.getPage(1),
-          base = page.getViewport({ scale: 1 });
-        if (
-          base.width <= 0 ||
-          base.height <= 0 ||
-          base.width > 5000 ||
-          base.height > 5000
-        )
-          throw new Error("Ukuran halaman PDF tidak didukung.");
-        const viewport = page.getViewport({
-          scale: Math.min(2, Math.sqrt(4000000 / (base.width * base.height))),
-        });
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.ceil(viewport.width);
-        canvas.height = Math.ceil(viewport.height);
-        await page.render({ canvasContext: canvas.getContext("2d"), viewport })
-          .promise;
-        value = canvas.toDataURL("image/jpeg", 0.95);
-        canvas.width = canvas.height = 0;
-      } catch (error) {
-        if (protectedPdf)
-          throw new Error("Buka proteksi kata sandi PDF terlebih dahulu.");
-        throw error;
-      } finally {
-        await task.destroy().catch(() => {});
-      }
+      value = await pdfBackgroundToImage(await file.arrayBuffer());
     }
     const image = new Image();
     image.src = value;
