@@ -16,7 +16,7 @@ COPY --from=build /app/dist ./dist
 COPY templates ./templates
 COPY fonts ./fonts
 COPY public ./public
-RUN mkdir -p output && chown -R node:node /app/output /ms-playwright
+RUN chown -R node:node /ms-playwright
 USER node
 EXPOSE 3000
 CMD ["node","dist/src/index.js"]

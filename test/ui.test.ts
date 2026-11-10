@@ -6,11 +6,9 @@ import path from "node:path";
 import { zipSync, unzipSync } from "fflate";
 import { createApp } from "../src/app.js";
 
-test("UI assets are public while document API remains protected", async () => {
+test("UI and document API are public", async () => {
   const app = await createApp({
-    apiKey: "private-test-key",
     logger: false,
-    batch: false,
   });
   try {
     for (const url of ["/", "/ui.js", "/ui.css", "/ui-font.ttf"]) {
@@ -18,17 +16,15 @@ test("UI assets are public while document API remains protected", async () => {
       expect(res.statusCode).toBe(200);
       expect(res.body).not.toContain("private-test-key");
     }
-    expect((await app.inject("/templates")).statusCode).toBe(401);
+    expect((await app.inject("/templates")).statusCode).toBe(200);
   } finally {
     await app.close();
   }
 });
 
-test("browser: login, form, PDF/PNG preview and download, import, batch and mobile", async () => {
+test("browser: public access, form, PDF/PNG preview and download, import, batch and mobile", async () => {
   const app = await createApp({
-    apiKey: "ui-test-key",
     logger: false,
-    batch: false,
   });
   const browser = await chromium.launch();
   const root = await mkdtemp(path.join(os.tmpdir(), "docforge-ui-"));
@@ -40,17 +36,8 @@ test("browser: login, form, PDF/PNG preview and download, import, batch and mobi
     const pageErrors: string[] = [];
     page.on("pageerror", (e) => pageErrors.push(e.message));
     await page.goto(base);
-    await page.locator("#api-key").fill("incorrect");
-    await page.locator("#connect-button").click();
-    await page.waitForFunction(
-      () => !document.getElementById("connection-error")?.hidden,
-    );
-    expect(await page.locator("#connection-error").innerText()).toContain(
-      "belum cocok",
-    );
-    await page.locator("#api-key").fill("ui-test-key");
-    await page.locator("#connect-button").click();
-    await page.waitForFunction(() => !document.querySelector("dialog")?.open);
+    await page.waitForSelector(".template-card");
+    expect(await page.locator("#api-key").count()).toBe(0);
     expect(await page.locator(".template-card").count()).toBe(3);
     expect(await page.locator("#field-nama").inputValue()).toContain("Siti");
     await page.screenshot({
@@ -111,29 +98,15 @@ test("browser: login, form, PDF/PNG preview and download, import, batch and mobi
     await page.waitForSelector("#field-nama");
     await page.locator("#field-nama").fill("");
     await page.locator("#mode-batch").click();
-    await page.route("**/generate/batch", async (route) => {
-      expect(route.request().headers()["x-api-key"]).toBe("ui-test-key");
-      expect(route.request().postDataJSON().data).toHaveLength(2);
-      await route.fulfill({ status: 202, json: { id: "ui-test" } });
-    });
-    await page.route("**/jobs/ui-test", (route) =>
-      route.fulfill({
-        json: {
-          id: "ui-test",
-          state: "completed",
-          progress: 100,
-          result: {
-            total: 2,
-            succeeded: 1,
-            failures: [{ index: 1, message: "Invalid data" }],
-          },
-        },
-      }),
-    );
     const zip = zipSync({ "report.json": Buffer.from('{"succeeded":1}') });
-    await page.route("**/jobs/ui-test/download", (route) =>
-      route.fulfill({ contentType: "application/zip", body: Buffer.from(zip) }),
-    );
+    await page.route("**/generate/batch", async (route) => {
+      expect(route.request().headers()["x-api-key"]).toBeUndefined();
+      expect(route.request().postDataJSON().data).toHaveLength(2);
+      await route.fulfill({
+        contentType: "application/zip",
+        body: Buffer.from(zip),
+      });
+    });
     await page.locator("#json-file").setInputFiles({
       name: "batch.json",
       mimeType: "application/json",
@@ -145,11 +118,7 @@ test("browser: login, form, PDF/PNG preview and download, import, batch and mobi
     await page.locator("#generate-button").click();
     await page.waitForFunction(
       () =>
-        document.getElementById("output-filename")?.textContent ===
-        "batch-ui-test.zip",
-    );
-    expect(await page.locator("#job-details").innerText()).toContain(
-      "1 item gagal",
+        document.getElementById("output-filename")?.textContent === "batch.zip",
     );
     const zipEvent = page.waitForEvent("download");
     await page.locator("#download-link").click();
@@ -170,12 +139,9 @@ test("browser: login, form, PDF/PNG preview and download, import, batch and mobi
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await page.locator("#connection-pill").click();
-    expect(await page.locator("dialog").isVisible()).toBe(true);
-    await page.locator("#close-dialog").click();
     await page.reload();
     await page.waitForSelector(".template-card");
-    expect(await page.locator("dialog").isVisible()).toBe(false);
+    expect(await page.locator("#api-key").count()).toBe(0);
     expect(pageErrors).toEqual([]);
   } finally {
     await browser.close();

@@ -22,15 +22,10 @@ const metadata = {
     style: "report",
   },
 };
-let apiKey = "";
-try {
-  apiKey = sessionStorage.getItem("docforge-key") || "";
-} catch {}
 let selected = null,
   mode = "single",
   busy = false,
   outputUrl = null,
-  pollTimer = null,
   selectionVersion = 0;
 let connected = false,
   fieldReaders = new Map();
@@ -59,7 +54,6 @@ function setConnection(value) {
   $("connection-label").textContent = value
     ? "Terhubung · Siap digunakan"
     : "Belum terhubung";
-  $("disconnect-button").hidden = !value;
 }
 function resetOutput() {
   if (outputUrl) URL.revokeObjectURL(outputUrl);
@@ -67,7 +61,6 @@ function resetOutput() {
   $("preview-body").innerHTML = emptyPreview;
   $("preview-tag").textContent = "BELUM ADA HASIL";
   $("preview-download").hidden = true;
-  $("job-progress").hidden = true;
   $("download-link").removeAttribute("href");
 }
 function setBusy(value) {
@@ -95,13 +88,14 @@ function setBusy(value) {
 async function request(url, options = {}) {
   const headers = {
     ...(options.body ? { "Content-Type": "application/json" } : {}),
-    "x-api-key": apiKey,
     ...options.headers,
   };
   const response = await fetch(url, {
     ...options,
     headers,
-    signal: options.signal || AbortSignal.timeout(40000),
+    signal:
+      options.signal ||
+      AbortSignal.timeout(url === "/generate/batch" ? 180000 : 40000),
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -110,22 +104,9 @@ async function request(url, options = {}) {
     );
     error.fields = body.error?.fields;
     error.status = response.status;
-    if (response.status === 401) {
-      setConnection(false);
-      try {
-        sessionStorage.removeItem("docforge-key");
-      } catch {}
-      openConnection();
-      error.message = "Kunci akses tidak valid. Hubungkan ulang workspace.";
-    }
     throw error;
   }
   return response;
-}
-function openConnection() {
-  $("connection-error").hidden = true;
-  $("api-key").value = "";
-  if (!$("connection-dialog").open) $("connection-dialog").showModal();
 }
 async function loadTemplates() {
   const templates = await (await request("/templates")).json();
@@ -488,64 +469,6 @@ function showOutput(blob, format) {
     true,
   );
 }
-async function pollJob(id) {
-  let failures = 0;
-  async function poll() {
-    try {
-      const job = await (
-        await request(`/jobs/${encodeURIComponent(id)}`)
-      ).json();
-      failures = 0;
-      const percent = typeof job.progress === "number" ? job.progress : 0;
-      $("job-percent").textContent = `${percent}%`;
-      $("job-bar").value = percent;
-      if (job.state === "failed") {
-        throw new Error(job.error || "Pembuatan batch gagal. Coba lagi.");
-      }
-      if (job.state === "completed") {
-        $("job-label").textContent = "Dokumen selesai dibuat";
-        const result = job.result;
-        $("job-details").textContent =
-          `${result.succeeded} dari ${result.total} dokumen berhasil dibuat.${result.failures.length ? `\n${result.failures.length} item gagal. Rinciannya tersedia dalam report.json di ZIP.` : ""}`;
-        $("preview-tag").textContent = "ZIP · SIAP";
-        const blob = await (
-          await request(`/jobs/${encodeURIComponent(id)}/download`)
-        ).blob();
-        if (outputUrl) URL.revokeObjectURL(outputUrl);
-        outputUrl = URL.createObjectURL(blob);
-        $("download-link").href = outputUrl;
-        $("download-link").download = `batch-${id}.zip`;
-        $("output-filename").textContent = `batch-${id}.zip`;
-        $("output-size").textContent =
-          `${(blob.size / 1024).toFixed(1)} KB · ${result.succeeded} dokumen + laporan`;
-        $("preview-download").hidden = false;
-        showNotice(
-          "Batch selesai. Unduh ZIP berisi dokumen dan laporan hasilnya.",
-          true,
-        );
-        setBusy(false);
-        return;
-      }
-      pollTimer = setTimeout(poll, 1000);
-    } catch (error) {
-      if (
-        error.status === 401 ||
-        error.status === 404 ||
-        ++failures >= 3 ||
-        !["TypeError", "TimeoutError", "AbortError"].includes(error.name)
-      ) {
-        handleError(error);
-        $("job-label").textContent = "Pemrosesan tidak dapat dipantau";
-        $("job-details").textContent =
-          `ID pekerjaan: ${id}. Coba hubungkan ulang workspace.`;
-        setBusy(false);
-        return;
-      }
-      pollTimer = setTimeout(poll, 2000);
-    }
-  }
-  await poll();
-}
 $("document-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (busy || !selected) return;
@@ -570,27 +493,24 @@ $("document-form").addEventListener("submit", async (event) => {
         data,
         filenameField: $("filename-field").value || undefined,
       };
-      let response;
-      try {
-        response = await request("/generate/batch", {
-          method: "POST",
-          body: JSON.stringify(body),
-        });
-      } catch (error) {
-        if (error.status === 404)
-          throw new Error(
-            "Fitur sekaligus belum diaktifkan. Hubungi pengelola untuk menyalakan layanan batch.",
-          );
-        throw error;
-      }
-      const job = await response.json();
-      $("job-progress").hidden = false;
-      $("job-label").textContent = "Memproses dokumen…";
-      $("job-percent").textContent = "0%";
-      $("job-bar").value = 0;
-      $("job-details").textContent = `ID pekerjaan: ${job.id}`;
-      $("preview-tag").textContent = "SEDANG DIPROSES";
-      await pollJob(job.id);
+      const response = await request("/generate/batch", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      const blob = await response.blob();
+      outputUrl = URL.createObjectURL(blob);
+      $("download-link").href = outputUrl;
+      $("download-link").download = "batch.zip";
+      $("output-filename").textContent = "batch.zip";
+      $("output-size").textContent =
+        `${(blob.size / 1024).toFixed(1)} KB · Dokumen dan report.json`;
+      $("preview-tag").textContent = "ZIP · SIAP";
+      $("preview-download").hidden = false;
+      showNotice(
+        "Batch selesai. Unduh ZIP dan periksa report.json untuk rincian hasil.",
+        true,
+      );
+      setBusy(false);
     } else {
       const data = Object.fromEntries(
         [...fieldReaders].map(([name, read]) => [name, read()]),
@@ -607,68 +527,19 @@ $("document-form").addEventListener("submit", async (event) => {
     setBusy(false);
   }
 });
-$("connection-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const previous = apiKey;
-  apiKey = $("api-key").value.trim();
-  if (!apiKey) return;
-  $("connect-button").disabled = true;
-  $("connection-error").hidden = true;
+async function connect() {
   try {
     await loadTemplates();
     setConnection(true);
-    if ($("remember-key").checked) {
-      try {
-        sessionStorage.setItem("docforge-key", apiKey);
-      } catch {}
-    } else {
-      try {
-        sessionStorage.removeItem("docforge-key");
-      } catch {}
-    }
-    $("api-key").value = "";
-    $("connection-dialog").close();
-    setBusy(false);
     showNotice("");
   } catch (error) {
-    apiKey = previous;
-    $("connection-error").textContent =
-      error.status === 401
-        ? "Kunci akses belum cocok. Periksa kembali atau hubungi pengelola."
-        : error.message;
-    $("connection-error").hidden = false;
-  } finally {
-    $("connect-button").disabled = false;
+    setConnection(false);
+    handleError(error);
   }
-});
-$("connection-button").onclick = openConnection;
-$("connection-pill").onclick = openConnection;
-$("close-dialog").onclick = () => $("connection-dialog").close();
-$("disconnect-button").onclick = () => {
-  clearTimeout(pollTimer);
-  apiKey = "";
-  try {
-    sessionStorage.removeItem("docforge-key");
-  } catch {}
-  selected = null;
-  selectionVersion++;
-  setConnection(false);
-  resetOutput();
-  $("template-grid").replaceChildren(
-    element(
-      "div",
-      "template-placeholder",
-      "Hubungkan workspace untuk melihat template.",
-    ),
-  );
-  $("template-count").textContent = "Belum terhubung";
-  $("dynamic-fields").replaceChildren(
-    element("div", "empty-form", "Mulai dengan menghubungkan workspace."),
-  );
-  $("batch-data").value = "";
   setBusy(false);
-  $("connection-dialog").close();
-};
+}
+$("connection-button").onclick = connect;
+$("connection-pill").onclick = connect;
 $("nav-single").onclick = $("mode-single").onclick = () => setMode("single");
 $("nav-batch").onclick = $("mode-batch").onclick = () => setMode("batch");
 $("sample-button").onclick = () => {
@@ -716,18 +587,10 @@ $("json-file").addEventListener("change", async () => {
   }
 });
 window.addEventListener("beforeunload", () => {
-  clearTimeout(pollTimer);
   if (outputUrl) URL.revokeObjectURL(outputUrl);
 });
-if (apiKey) {
-  loadTemplates()
-    .then(() => {
-      setConnection(true);
-      setBusy(false);
-    })
-    .catch((error) => {
-      setConnection(false);
-      handleError(error);
-      openConnection();
-    });
-} else openConnection();
+// Remove credentials retained by older versions of the application.
+try {
+  sessionStorage.removeItem("docforge-key");
+} catch {}
+connect();

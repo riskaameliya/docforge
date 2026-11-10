@@ -144,9 +144,7 @@ test("browser converts multipage PDF, exports usable TS and installs template ZI
     p.drawText("Nama Peserta", { x: 40, y: 370, size: 12, font });
   }
   const app = await createApp({
-    apiKey: "converter-test",
     logger: false,
-    batch: false,
   });
   const browser = await chromium.launch();
   const root = await mkdtemp(path.join(os.tmpdir(), "docforge-converter-"));

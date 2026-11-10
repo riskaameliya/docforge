@@ -42,14 +42,14 @@
         <div class="sidebar-bottom">
           <span class="avatar">DF</span>
           <div>
-            <strong>Workspace lokal</strong
+            <strong>DocForge publik</strong
             ><small id="connection-label">Belum terhubung</small>
           </div>
           <button
             class="icon-button"
             id="connection-button"
-            aria-label="Atur koneksi"
-            title="Atur koneksi"
+            aria-label="Muat ulang template"
+            title="Muat ulang template"
           >
             ⚙
           </button>
@@ -66,7 +66,7 @@
               class="connection-pill"
               id="connection-pill"
               type="button"
-              aria-label="Atur koneksi workspace"
+              aria-label="Muat ulang template"
             >
               <i></i> Belum terhubung</button
             ><a href="/editor" class="text-link">Editor template ↗</a>
@@ -79,7 +79,8 @@
               <h1>Dokumen siap.<br /><span>Urusan jadi mudah.</span></h1>
               <p class="heading-description">
                 Pilih template, isi datanya, dan unduh hasilnya.<br />Dokumen
-                profesional, tanpa repot mengatur layout.
+                profesional, tanpa login atau kunci akses. Data diproses
+                sementara di server; hasil tidak diarsipkan.
               </p>
             </div>
             <div class="heading-art" aria-hidden="true">
@@ -100,13 +101,11 @@
                 <h2 id="templates-heading">Pilih template</h2>
               </div>
               <span class="section-hint" id="template-count"
-                >Hubungkan workspace untuk memulai</span
+                >Memuat template…</span
               >
             </div>
             <div class="template-grid" id="template-grid">
-              <div class="template-placeholder">
-                Template akan muncul setelah workspace terhubung.
-              </div>
+              <div class="template-placeholder">Memuat template…</div>
             </div>
           </section>
           <div class="work-grid">
@@ -223,7 +222,7 @@
                     kamu mengunduhnya.
                   </p>
                   <span class="preview-footnote"
-                    >PDF atau PNG · Langsung dari browser</span
+                    >PDF atau PNG · Tanpa arsip di server</span
                   >
                 </div>
               </div>
@@ -236,14 +235,6 @@
                   >↓ Unduh</a
                 >
               </div>
-              <div class="job-progress" id="job-progress" hidden>
-                <div>
-                  <strong id="job-label">Memproses dokumen…</strong
-                  ><span id="job-percent">0%</span>
-                </div>
-                <progress id="job-bar" max="100" value="0"></progress>
-                <p id="job-details"></p>
-              </div>
             </section>
           </div>
           <footer class="page-footer">
@@ -255,42 +246,5 @@
         </main>
       </div>
     </div>
-    <dialog id="connection-dialog" aria-labelledby="connection-title">
-      <form id="connection-form">
-        <div class="dialog-icon">↗</div>
-        <p class="eyebrow">SELAMAT DATANG DI DOCFORGE</p>
-        <h2 id="connection-title">Hubungkan workspace</h2>
-        <p>Masukkan kunci akses dari pengelola untuk mulai membuat dokumen.</p>
-        <label for="api-key">Kunci akses</label
-        ><input
-          id="api-key"
-          type="password"
-          placeholder="Masukkan kunci akses"
-          autocomplete="off"
-          required
-        /><label class="remember-label"
-          ><input id="remember-key" type="checkbox" checked /> Ingat selama tab
-          ini terbuka</label
-        >
-        <p class="dialog-error" id="connection-error" role="alert" hidden></p>
-        <button class="primary-button" id="connect-button" type="submit">
-          Hubungkan workspace <span>→</span></button
-        ><button
-          class="subtle-button disconnect-button"
-          id="disconnect-button"
-          type="button"
-          hidden
-        >
-          Putuskan koneksi</button
-        ><button
-          class="dialog-close icon-button"
-          id="close-dialog"
-          type="button"
-          aria-label="Tutup"
-        >
-          ×
-        </button>
-      </form>
-    </dialog>
   </body>
 </html>

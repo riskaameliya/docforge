@@ -31,10 +31,10 @@ test("long table spans pages; long Unicode text and empty optional fields", asyn
   });
   expect((await PDFDocument.load(b)).getPageCount()).toBeGreaterThan(2);
 }, 30000);
-test("API auth, validation, download and path traversal", async () => {
-  const app = await createApp({ renderer: r, apiKey: "test", logger: false });
+test("Public API, validation, download and path traversal", async () => {
+  const app = await createApp({ renderer: r, logger: false });
   expect((await app.inject("/health")).statusCode).toBe(200);
-  expect((await app.inject("/templates")).statusCode).toBe(401);
+  expect((await app.inject("/templates")).statusCode).toBe(200);
   const headers = { "x-api-key": "test" };
   expect((await app.inject({ url: "/templates", headers })).statusCode).toBe(
     200,

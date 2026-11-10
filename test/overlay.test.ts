@@ -113,7 +113,7 @@ test("PNG background exports PDF/PNG and missing optional field", async () => {
 test("editor loads PDF/PNG, adds fields and exports JSON", async () => {
   const { createApp } = await import("../src/app.js");
   const { chromium } = await import("playwright");
-  const app = await createApp({ apiKey: "test", logger: false, batch: false });
+  const app = await createApp({ logger: false });
   const browser = await chromium.launch();
   try {
     const url = await app.listen({ port: 0, host: "127.0.0.1" });
@@ -139,13 +139,11 @@ test("editor loads PDF/PNG, adds fields and exports JSON", async () => {
     })
       .png()
       .toBuffer();
-    await page
-      .locator("#file")
-      .setInputFiles({
-        name: "background.png",
-        mimeType: "image/png",
-        buffer: png,
-      });
+    await page.locator("#file").setInputFiles({
+      name: "background.png",
+      mimeType: "image/png",
+      buffer: png,
+    });
     await page.waitForFunction(() => {
       const c = document.querySelector("canvas");
       return c?.width === 600;

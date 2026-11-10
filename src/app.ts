@@ -1,10 +1,9 @@
 import Fastify from "fastify";
 import { readFile } from "node:fs/promises";
-import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { ApiError } from "./templates.js";
-import { Renderer } from "./render.js";
-import { Batches, batchSchema } from "./batch.js";
+import { Renderer, Limiter } from "./render.js";
+import { processBatch, batchSchema } from "./batch.js";
 export const requestSchema = z.object({
   template: z.string().regex(/^[\w-]+$/),
   format: z.enum(["pdf", "png"]),
@@ -13,14 +12,11 @@ export const requestSchema = z.object({
 export async function createApp(
   options: {
     renderer?: Renderer;
-    apiKey?: string;
     logger?: boolean;
-    batch?: boolean;
   } = {},
 ) {
-  const key = options.apiKey ?? process.env.API_KEY;
-  if (!key) throw new Error("API_KEY wajib diset");
-  let batches: Batches | undefined;
+  const batchLimiter = new Limiter(1, 2);
+  const clients = new Map<string, { count: number; reset: number }>();
   const limits = z
     .object({
       body: z.coerce.number().int().positive(),
@@ -39,37 +35,31 @@ export async function createApp(
   });
   const renderer =
     options.renderer ?? new Renderer(undefined, limits.concurrency);
-  app.addHook("onRequest", async (req) => {
-    if (
-      req.url === "/health" ||
-      [
-        "/",
-        "/ui.css",
-        "/ui.js",
-        "/ui-font.ttf",
-        "/converter",
-        "/converter.css",
-        "/converter.js",
-        "/template-export.js",
-        "/converter-vendor/fflate.js",
-        "/editor",
-        "/editor.js",
-        "/editor-vendor/pdf.mjs",
-        "/editor-vendor/pdf.worker.mjs",
-      ].includes(req.url)
-    )
-      return;
-    const provided = req.headers["x-api-key"];
-    if (
-      typeof provided !== "string" ||
-      Buffer.byteLength(provided) !== Buffer.byteLength(key) ||
-      !timingSafeEqual(Buffer.from(provided), Buffer.from(key))
-    )
-      throw new ApiError(401, "API key tidak valid");
+  app.addHook("onRequest", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("Referrer-Policy", "no-referrer");
+    if (!req.url.startsWith("/generate")) return;
+    const now = Date.now();
+    for (const [ip, entry] of clients)
+      if (entry.reset <= now) clients.delete(ip);
+    let entry = clients.get(req.ip);
+    if (!entry) {
+      if (clients.size >= 10000)
+        throw new ApiError(503, "Layanan sedang penuh");
+      clients.set(req.ip, (entry = { count: 0, reset: now + 60000 }));
+    }
+    if (++entry.count > 60) {
+      reply.header(
+        "Retry-After",
+        String(Math.ceil((entry.reset - now) / 1000)),
+      );
+      throw new ApiError(429, "Terlalu banyak permintaan. Coba lagi sebentar.");
+    }
   });
   app.setErrorHandler((err: any, req, reply) => {
     const status = err instanceof z.ZodError ? 422 : (err.statusCode ?? 500);
-    if (status >= 500) req.log.error({ err }, "Request gagal");
+    if (status >= 500) req.log.error({ statusCode: status }, "Request gagal");
     reply.code(status).send({
       error: {
         code: status,
@@ -111,39 +101,14 @@ export async function createApp(
       )
       .send(result);
   });
-  if (options.batch ?? !!process.env.REDIS_URL) {
-    const service = (batches = new Batches(renderer));
-    service.worker.on("error", (err) =>
-      app.log.error({ err }, "Batch worker error"),
-    );
-    service.queue.on("error", (err) =>
-      app.log.error({ err }, "Batch queue error"),
-    );
-    service.worker.on("failed", (job, err) =>
-      app.log.error({ jobId: job?.id, err }, "Batch job failed"),
-    );
-    app.post("/generate/batch", async (req, reply) =>
-      reply
-        .code(202)
-        .send(await service.submit(batchSchema(limits.batch).parse(req.body))),
-    );
-    app.get<{ Params: { id: string } }>("/jobs/:id", (req) =>
-      service.status(req.params.id),
-    );
-    app.get<{ Params: { id: string } }>(
-      "/jobs/:id/download",
-      async (req, reply) => {
-        const stream = await service.download(req.params.id);
-        return reply
-          .type("application/zip")
-          .header(
-            "Content-Disposition",
-            `attachment; filename="batch-${req.params.id}.zip"`,
-          )
-          .send(stream);
-      },
-    );
-  }
+  app.post("/generate/batch", async (req, reply) => {
+    const input = batchSchema(limits.batch).parse(req.body);
+    const bytes = await batchLimiter.run(() => processBatch(input, renderer));
+    return reply
+      .type("application/zip")
+      .header("Content-Disposition", 'attachment; filename="batch.zip"')
+      .send(bytes);
+  });
   for (const [url, file, type] of [
     ["/", "public/index.html", "text/html; charset=utf-8"],
     ["/ui.css", "public/ui.css", "text/css"],
@@ -176,7 +141,6 @@ export async function createApp(
         .send(await readFile(`node_modules/pdfjs-dist/build/${name}`)),
     );
   app.addHook("onClose", async () => {
-    await batches?.close();
     await renderer.close();
   });
   return app;
